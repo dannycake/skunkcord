@@ -1,0 +1,12 @@
+module components
+DAvatar 1.0 DAvatar.qml
+DText 1.0 DText.qml
+DHoverRect 1.0 DHoverRect.qml
+DBadge 1.0 DBadge.qml
+DSeparator 1.0 DSeparator.qml
+DScrollBar 1.0 DScrollBar.qml
+GuildIcon 1.0 GuildIcon.qml
+Twemoji 1.0 Twemoji.qml
+IconButton 1.0 IconButton.qml
+UserBadges 1.0 UserBadges.qml
+RolePill 1.0 RolePill.qml

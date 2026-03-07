@@ -1,0 +1,12 @@
+{
+  "diagnostics": {
+    "enable": true,
+    "globals": ["discord"]
+  },
+  "workspace": {
+    "library": ["discord.d.lua"]
+  },
+  "runtime": {
+    "version": "Lua 5.4"
+  }
+}

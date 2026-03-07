@@ -1,0 +1,17 @@
+# Build artifacts
+/target/
+*.tar.gz
+discord-qt-bundle/
+discord-qt-release/
+PACKAGING-SUMMARY.txt
+mobile/linux-test/build/
+mobile/**/build/
+
+# IDE
+.idea/
+.cursor/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

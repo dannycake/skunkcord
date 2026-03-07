@@ -1,0 +1,19 @@
+{
+  "id": "fake-deafen",
+  "name": "Fake Deafen",
+  "description": "Appear deafened to others while still hearing everything",
+  "version": "1.0.0",
+  "author": "Skunk Ventures LLC",
+  "options": [
+    {
+      "key": "record_audio",
+      "label": "Record Audio",
+      "description": "Record incoming audio while fake deafened",
+      "type": "boolean",
+      "default": false,
+      "category": "voice"
+    }
+  ],
+  "events": [],
+  "entry": "main.lua"
+}

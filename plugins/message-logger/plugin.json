@@ -1,0 +1,30 @@
+{
+  "id": "message-logger",
+  "name": "Message Logger",
+  "description": "Track deleted and edited messages locally with full edit history and search",
+  "version": "1.0.0",
+  "author": "Skunk Ventures LLC",
+  "options": [
+    {
+      "key": "cache_size",
+      "label": "Cache Size",
+      "description": "Maximum number of messages to keep in memory",
+      "type": "number",
+      "default": 10000,
+      "category": "storage",
+      "min": 100,
+      "max": 50000
+    },
+    {
+      "key": "show_deleted_style",
+      "label": "Deleted Message Style",
+      "description": "How to display deleted messages",
+      "type": "select",
+      "default": "strikethrough",
+      "category": "display",
+      "choices": ["strikethrough", "faded", "deleted"]
+    }
+  ],
+  "events": ["MESSAGE_CREATE", "MESSAGE_UPDATE", "MESSAGE_DELETE", "MESSAGE_DELETE_BULK"],
+  "entry": "main.lua"
+}

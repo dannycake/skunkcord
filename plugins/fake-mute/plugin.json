@@ -1,0 +1,27 @@
+{
+  "id": "fake-mute",
+  "name": "Fake Mute",
+  "description": "Appear muted to others while still receiving audio",
+  "version": "1.0.0",
+  "author": "Skunk Ventures LLC",
+  "options": [
+    {
+      "key": "record_audio",
+      "label": "Record Audio",
+      "description": "Record incoming audio while fake muted",
+      "type": "boolean",
+      "default": false,
+      "category": "voice"
+    },
+    {
+      "key": "send_silence",
+      "label": "Send Silence Frames",
+      "description": "Send silence to keep UDP connection alive",
+      "type": "boolean",
+      "default": true,
+      "category": "voice"
+    }
+  ],
+  "events": [],
+  "entry": "main.lua"
+}

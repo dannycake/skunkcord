@@ -1,0 +1,4 @@
+-- Fake Mute plugin
+-- Appears muted to others while still receiving audio.
+-- Uses discord.set_fake_mute(true/false) and discord.get_fake_mute().
+-- Toggle is typically triggered by UI; plugin config controls record_audio, send_silence.

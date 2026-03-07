@@ -1,0 +1,4 @@
+-- Fake Deafen plugin
+-- Appears deafened to others while still receiving audio.
+-- Uses discord.set_fake_deafen(true/false) and discord.get_fake_deafen().
+-- Fake deafen implies fake mute.
