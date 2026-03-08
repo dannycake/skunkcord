@@ -160,6 +160,8 @@ pub struct AppController {
     copy_message_link: qt_method!(fn(&self, channel_id: QString, guild_id: QString, message_id: QString)),
     /// Copy arbitrary text to clipboard (e.g. user ID, raw JSON)
     copy_to_clipboard: qt_method!(fn(&self, text: QString)),
+    /// Clear the error message (e.g. after user dismisses error toast)
+    clear_error: qt_method!(fn(&mut self)),
     /// Set up a reply to a message
     reply_to_message: qt_method!(fn(&mut self, message_id: QString)),
     /// Add a reaction to a message
@@ -666,6 +668,11 @@ impl AppController {
                 tracing::warn!("Failed to set clipboard");
             }
         }
+    }
+
+    fn clear_error(&mut self) {
+        self.error_message = QString::default();
+        self.state_changed();
     }
 
     fn reply_to_message(&mut self, _message_id: QString) {

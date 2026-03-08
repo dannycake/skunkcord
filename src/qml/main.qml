@@ -2141,6 +2141,62 @@ Window {
                 spacing: 0
                 visible: isLoggedIn
 
+                // Error toast (when logged in — API errors, send failures, etc.)
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: loginError.length > 0 ? 40 : 0
+                    visible: loginError.length > 0
+                    color: "#f23f4320"
+                    border.width: 1
+                    border.color: theme.danger
+                    radius: theme.radiusSmall
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    Layout.topMargin: 8
+                    Layout.bottomMargin: 4
+                    opacity: loginError.length > 0 ? 1 : 0
+                    Behavior on Layout.preferredHeight { NumberAnimation { duration: theme.animFast } }
+                    Behavior on opacity { NumberAnimation { duration: theme.animFast } }
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 12
+                        spacing: 8
+                        Text {
+                            text: "\u{26A0}"
+                            color: theme.danger
+                            font.pixelSize: 14
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: loginError
+                            color: theme.textNormal
+                            font.family: fontFamily
+                            font.pixelSize: 12
+                            elide: Text.ElideRight
+                        }
+                        Text {
+                            text: "\u{2715}"
+                            color: theme.textFaint
+                            font.pixelSize: 12
+                        }
+                        MouseArea {
+                            width: 24
+                            height: 24
+                            anchors.verticalCenter: parent.verticalCenter
+                            onClicked: if (app) app.clear_error()
+                        }
+                    }
+                    Timer {
+                        running: loginError.length > 0
+                        interval: 5000
+                        repeat: false
+                        onTriggered: if (app) app.clear_error()
+                    }
+                }
+
+
                 // Channel header — with gradient shadow
                 Rectangle {
                     Layout.fillWidth: true
@@ -7307,6 +7363,47 @@ Window {
                         reactionPickerPopup.targetChannelId = msgContextMenu.targetChannelId
                         reactionPickerPopup.targetMessageId = msgContextMenu.targetMessageId
                         reactionPickerPopup.open()
+                        msgContextMenu.close()
+                    }
+                }
+            }
+
+            // Copy Message Text
+            Rectangle {
+                visible: msgContextMenu.targetContent && msgContextMenu.targetContent.length > 0
+                Layout.fillWidth: true
+                Layout.preferredHeight: visible ? 32 : 0
+                radius: theme.radiusSmall
+                color: copyTextMa.pressed ? theme.bgActive :
+                       copyTextMa.containsMouse ? theme.bgHover : "transparent"
+                Behavior on color { ColorAnimation { duration: theme.animFast } }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    spacing: 8
+
+                    Text {
+                        text: "\u{1F4CB}"
+                        color: theme.textFaint
+                        font.pixelSize: 13
+                    }
+                    Text {
+                        text: "Copy Message Text"
+                        color: theme.textNormal
+                        font.family: fontFamily
+                        font.pixelSize: 13
+                        Layout.fillWidth: true
+                    }
+                }
+                MouseArea {
+                    id: copyTextMa
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (app && msgContextMenu.targetContent) app.copy_to_clipboard(msgContextMenu.targetContent)
                         msgContextMenu.close()
                     }
                 }
