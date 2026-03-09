@@ -34,7 +34,7 @@ impl PluginLoader {
         }
         #[cfg(not(feature = "mobile"))]
         {
-            let dirs = ProjectDirs::from("com", "discord-qt", "DiscordQt")?;
+            let dirs = ProjectDirs::from("com", "skunkcord", "Skunkcord")?;
             let plugins_dir = dirs.data_dir().join("plugins");
             std::fs::create_dir_all(&plugins_dir).ok()?;
             Some(Self {

@@ -1,5 +1,5 @@
 -- Message Logger plugin
--- Tracks deleted and edited messages using the Discord Qt message cache API.
+-- Tracks deleted and edited messages using the Skunkcord message cache API.
 -- This plugin is also implemented natively in Rust for performance;
 -- this Lua file documents the plugin API for custom plugin authors.
 

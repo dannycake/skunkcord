@@ -2,7 +2,7 @@
 
 # Deployment Guide
 
-This guide explains how to build and deploy Discord Qt to other machines.
+This guide explains how to build and deploy Skunkcord to other machines.
 
 ## Building for Release
 
@@ -13,12 +13,12 @@ cargo build --release
 ```
 
 The executable will be at:
-- Linux/macOS: `target/release/discord_qt`
-- Windows: `target\release\discord_qt.exe`
+- Linux/macOS: `target/release/skunkcord`
+- Windows: `target\release\skunkcord.exe`
 
 ## Packaging Options
 
-Discord Qt offers two packaging methods:
+Skunkcord offers two packaging methods:
 
 ### Option 1: Standalone Bundle (Recommended)
 
@@ -26,7 +26,7 @@ Discord Qt offers two packaging methods:
 
 ```bash
 ./package-bundle.sh
-tar -czf discord-qt-linux-standalone.tar.gz discord-qt-bundle/
+tar -czf skunkcord-linux-standalone.tar.gz skunkcord-bundle/
 ```
 
 - **Size:** ~34 MB
@@ -40,7 +40,7 @@ tar -czf discord-qt-linux-standalone.tar.gz discord-qt-bundle/
 
 ```bash
 ./package.sh
-tar -czf discord-qt-linux.tar.gz discord-qt-release/
+tar -czf skunkcord-linux.tar.gz skunkcord-release/
 ```
 
 - **Size:** ~3.6 MB
@@ -58,22 +58,22 @@ cargo build --release
 ./package-bundle.sh
 
 # 2. Create archive
-tar -czf discord-qt-linux-standalone.tar.gz discord-qt-bundle/
+tar -czf skunkcord-linux-standalone.tar.gz skunkcord-bundle/
 
 # 3. Transfer to target machine
-scp discord-qt-linux-standalone.tar.gz user@remote:~/
+scp skunkcord-linux-standalone.tar.gz user@remote:~/
 
 # 4. On target machine - extract and run (no Qt needed!)
-tar -xzf discord-qt-linux-standalone.tar.gz
-cd discord-qt-bundle
-./discord_qt.sh
+tar -xzf skunkcord-linux-standalone.tar.gz
+cd skunkcord-bundle
+./skunkcord.sh
 ```
 
 ## Packaging for Distribution (Detailed)
 
-To deploy Discord Qt to another machine, you need **both**:
+To deploy Skunkcord to another machine, you need **both**:
 
-1. **The executable** (`discord_qt` or `discord_qt.exe`)
+1. **The executable** (`skunkcord` or `skunkcord.exe`)
 2. **The `qml` directory** with all QML and JavaScript files
 3. **(Optional)** Qt libraries for standalone deployment
 
@@ -82,7 +82,7 @@ To deploy Discord Qt to another machine, you need **both**:
 Your deployment package should look like this:
 
 ```
-discord_qt/              # or discord_qt.exe on Windows
+skunkcord/              # or skunkcord.exe on Windows
 qml/
 ├── main.qml
 ├── test_ui.qml
@@ -110,9 +110,9 @@ From your project root:
 cp -r src/qml target/release/
 
 # Or create a deployment package
-mkdir discord-qt-release
-cp target/release/discord_qt discord-qt-release/
-cp -r src/qml discord-qt-release/
+mkdir skunkcord-release
+cp target/release/skunkcord skunkcord-release/
+cp -r src/qml skunkcord-release/
 ```
 
 On Windows (PowerShell):
@@ -122,9 +122,9 @@ On Windows (PowerShell):
 Copy-Item -Recurse src\qml target\release\
 
 # Or create a deployment package
-New-Item -ItemType Directory -Path discord-qt-release
-Copy-Item target\release\discord_qt.exe discord-qt-release\
-Copy-Item -Recurse src\qml discord-qt-release\
+New-Item -ItemType Directory -Path skunkcord-release
+Copy-Item target\release\skunkcord.exe skunkcord-release\
+Copy-Item -Recurse src\qml skunkcord-release\
 ```
 
 ## Standalone Bundle Details
@@ -201,18 +201,18 @@ echo "Building release..."
 cargo build --release
 
 echo "Creating package..."
-rm -rf discord-qt-release
-mkdir -p discord-qt-release
+rm -rf skunkcord-release
+mkdir -p skunkcord-release
 
 # Copy executable
-cp target/release/discord_qt discord-qt-release/
+cp target/release/skunkcord skunkcord-release/
 
 # Copy QML files
-cp -r src/qml discord-qt-release/
+cp -r src/qml skunkcord-release/
 
 # Create README
-cat > discord-qt-release/README.txt << 'EOF'
-Discord Qt Client
+cat > skunkcord-release/README.txt << 'EOF'
+Skunkcord Client
 =================
 
 Requirements:
@@ -222,13 +222,13 @@ On Ubuntu/Debian:
   sudo apt install qml6-module-qtquick qml6-module-qtquick-controls
 
 Run:
-  ./discord_qt
+  ./skunkcord
 
-For support, visit: https://github.com/your-username/discord-qt
+For support, visit: https://github.com/your-username/skunkcord
 EOF
 
-echo "Package created at discord-qt-release/"
-echo "Create archive with: tar -czf discord-qt-linux.tar.gz discord-qt-release/"
+echo "Package created at skunkcord-release/"
+echo "Create archive with: tar -czf skunkcord-linux.tar.gz skunkcord-release/"
 ```
 
 ### Windows (`package.ps1`)
@@ -238,18 +238,18 @@ Write-Host "Building release..."
 cargo build --release
 
 Write-Host "Creating package..."
-Remove-Item -Recurse -Force discord-qt-release -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path discord-qt-release
+Remove-Item -Recurse -Force skunkcord-release -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Path skunkcord-release
 
 # Copy executable
-Copy-Item target\release\discord_qt.exe discord-qt-release\
+Copy-Item target\release\skunkcord.exe skunkcord-release\
 
 # Copy QML files
-Copy-Item -Recurse src\qml discord-qt-release\
+Copy-Item -Recurse src\qml skunkcord-release\
 
 # Create README
 @"
-Discord Qt Client
+Skunkcord Client
 =================
 
 Requirements:
@@ -258,13 +258,13 @@ Requirements:
 Download Qt 6 from: https://www.qt.io/download-qt-installer
 
 Run:
-  discord_qt.exe
+  skunkcord.exe
 
-For support, visit: https://github.com/your-username/discord-qt
-"@ | Out-File -Encoding UTF8 discord-qt-release\README.txt
+For support, visit: https://github.com/your-username/skunkcord
+"@ | Out-File -Encoding UTF8 skunkcord-release\README.txt
 
-Write-Host "Package created at discord-qt-release\"
-Write-Host "Create archive with: Compress-Archive discord-qt-release discord-qt-windows.zip"
+Write-Host "Package created at skunkcord-release\"
+Write-Host "Create archive with: Compress-Archive skunkcord-release skunkcord-windows.zip"
 ```
 
 Make the script executable (Linux/macOS):
@@ -293,11 +293,11 @@ Before distributing, test the package on a clean system:
 ```bash
 # Extract package to temporary location
 cd /tmp
-tar -xzf discord-qt-linux.tar.gz
-cd discord-qt-release
+tar -xzf skunkcord-linux.tar.gz
+cd skunkcord-release
 
 # Run
-./discord_qt
+./skunkcord
 ```
 
 ## Static Linking (Advanced)
@@ -312,9 +312,9 @@ See: https://doc.qt.io/qt-5/linux-deployment.html
 
 - [ ] Run `./package-bundle.sh` to create self-contained package
 - [ ] Test on clean system without Qt installed
-- [ ] Verify launcher script (`discord_qt.sh`) works
+- [ ] Verify launcher script (`skunkcord.sh`) works
 - [ ] Check all QML files load correctly
-- [ ] Create archive: `tar -czf discord-qt-standalone.tar.gz discord-qt-bundle/`
+- [ ] Create archive: `tar -czf skunkcord-standalone.tar.gz skunkcord-bundle/`
 - [ ] Include README with launch instructions
 
 ### For Minimal Package
@@ -324,7 +324,7 @@ See: https://doc.qt.io/qt-5/linux-deployment.html
 - [ ] Test on system with Qt 6 installed
 - [ ] Include README with Qt installation instructions
 - [ ] Test with different Qt versions if possible
-- [ ] Create archive: `tar -czf discord-qt.tar.gz discord-qt-release/`
+- [ ] Create archive: `tar -czf skunkcord.tar.gz skunkcord-release/`
 
 ## Comparison: Standalone vs Minimal
 

@@ -24,12 +24,12 @@ use qmetaobject::qml_register_type;
 /// Initialize the Qt application
 pub fn init_qt_app() {
     // Register custom types with Qt meta-object system
-    qml_register_type::<DiscordQtApp>(c"DiscordQt", 1, 0, c"DiscordQtApp");
+    qml_register_type::<SkunkcordApp>(c"Skunkcord", 1, 0, c"SkunkcordApp");
 }
 
 /// Main Qt application controller
 #[derive(QObject, Default)]
-pub struct DiscordQtApp {
+pub struct SkunkcordApp {
     base: qt_base_class!(trait QObject),
 
     /// Current user display name
@@ -68,7 +68,7 @@ pub struct DiscordQtApp {
     open_settings: qt_method!(fn(&self)),
 }
 
-impl DiscordQtApp {
+impl SkunkcordApp {
     fn request_login(&self) {
         self.login_requested();
     }

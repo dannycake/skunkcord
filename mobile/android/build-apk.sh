@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build Discord Qt Android APK (Rust .so + Qt app + androiddeployqt).
+# Build Skunkcord Android APK (Rust .so + Qt app + androiddeployqt).
 #
 # Prerequisites:
 #   - Qt 6 for Android (e.g. Qt Online Installer, select Android component)
@@ -69,7 +69,7 @@ echo "Building Rust library for $RUST_TARGET..."
 cd "$REPO_ROOT"
 cargo ndk -t "$RUST_TARGET" build --release --lib $FEATURES
 
-RUST_LIB="$REPO_ROOT/target/$RUST_TARGET/release/libdiscord_qt.so"
+RUST_LIB="$REPO_ROOT/target/$RUST_TARGET/release/libskunkcord.so"
 if [ ! -f "$RUST_LIB" ]; then
     echo "Rust library not found: $RUST_LIB"
     exit 1

@@ -6,9 +6,9 @@
 //! Logs all raw messages to diagnose connection issues.
 //! Run: DISCORD_TOKEN=your_token cargo run --bin test_gateway
 
-use discord_qt::fingerprint::BrowserFingerprint;
-use discord_qt::gateway::{GatewayPayload, ReadyEvent};
-use discord_qt::GATEWAY_VERSION;
+use skunkcord::fingerprint::BrowserFingerprint;
+use skunkcord::gateway::{GatewayPayload, ReadyEvent};
+use skunkcord::GATEWAY_VERSION;
 use futures_util::{SinkExt, StreamExt};
 use std::time::{Duration, Instant};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
@@ -204,7 +204,7 @@ async fn main() -> anyhow::Result<()> {
     // Now test through the actual Gateway struct (same code path as main app)
     println!("\n  --- Testing Gateway struct integration ---");
     {
-        use discord_qt::gateway::{Gateway, GatewayEvent};
+        use skunkcord::gateway::{Gateway, GatewayEvent};
         let fingerprint2 = BrowserFingerprint::new_chrome();
         let mut gw = Gateway::new(token.clone(), fingerprint2);
         let mut rx = gw.subscribe();

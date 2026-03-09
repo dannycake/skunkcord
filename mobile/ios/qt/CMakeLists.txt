@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(DiscordQt LANGUAGES CXX)
+project(Skunkcord LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTOMOC ON)
@@ -23,26 +23,26 @@ endif()
 
 # Rust static library (built separately)
 if(NOT DEFINED RUST_LIB)
-    message(FATAL_ERROR "RUST_LIB must be set to path of libdiscord_qt.a")
+    message(FATAL_ERROR "RUST_LIB must be set to path of libskunkcord.a")
 endif()
 
 # Qt for iOS
 find_package(Qt6 REQUIRED COMPONENTS Core Quick Gui Qml)
 
 # Repo root (for include/ and src/qml); shared C++ (main.cpp, AppController)
-set(DISCORD_QT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
+set(SKUNKCORD_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 set(SHARED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../shared")
 
 # Executable (iOS app bundle)
-qt_add_executable(DiscordQt
+qt_add_executable(Skunkcord
     ${SHARED_DIR}/main.cpp
     ${SHARED_DIR}/AppController.cpp
     ${SHARED_DIR}/AppController.h
 )
 
-target_include_directories(DiscordQt PRIVATE "${DISCORD_QT_ROOT}/include" "${SHARED_DIR}")
+target_include_directories(Skunkcord PRIVATE "${SKUNKCORD_ROOT}/include" "${SHARED_DIR}")
 
-target_link_libraries(DiscordQt PRIVATE
+target_link_libraries(Skunkcord PRIVATE
     Qt6::Core
     Qt6::Quick
     Qt6::Gui
@@ -51,7 +51,7 @@ target_link_libraries(DiscordQt PRIVATE
 )
 
 # Link system libraries required by Rust on iOS
-target_link_libraries(DiscordQt PRIVATE
+target_link_libraries(Skunkcord PRIVATE
     "-framework Security"
     "-framework Foundation"
     "-framework SystemConfiguration"
@@ -60,7 +60,7 @@ target_link_libraries(DiscordQt PRIVATE
 
 # Bundle QML files as resources
 # Qt requires QT_RESOURCE_ALIAS for files outside the source directory
-set(QML_SOURCE_DIR "${DISCORD_QT_ROOT}/src/qml")
+set(QML_SOURCE_DIR "${SKUNKCORD_ROOT}/src/qml")
 
 set(MAIN_QML "${QML_SOURCE_DIR}/main.qml")
 set_source_files_properties(${MAIN_QML} PROPERTIES QT_RESOURCE_ALIAS "main.qml")
@@ -71,7 +71,7 @@ foreach(_js IN LISTS QML_JS)
     get_filename_component(_name "${_js}" NAME)
     set_source_files_properties("${_js}" PROPERTIES QT_RESOURCE_ALIAS "${_name}")
 endforeach()
-qt_add_resources(DiscordQt "qml_resources"
+qt_add_resources(Skunkcord "qml_resources"
     PREFIX "/qml"
     FILES ${MAIN_QML} ${MOBILE_QML} ${QML_JS}
 )
@@ -82,19 +82,19 @@ foreach(_qml IN LISTS QML_COMPONENTS)
     get_filename_component(_name "${_qml}" NAME)
     set_source_files_properties("${_qml}" PROPERTIES QT_RESOURCE_ALIAS "${_name}")
 endforeach()
-qt_add_resources(DiscordQt "qml_components"
+qt_add_resources(Skunkcord "qml_components"
     PREFIX "/qml/components"
     FILES ${QML_COMPONENTS}
 )
 
 # Info.plist and bundle identifier (must match App ID in provisioning profile)
-set_target_properties(DiscordQt PROPERTIES
+set_target_properties(Skunkcord PROPERTIES
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist"
-    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "ink.danny.discordqt"
+    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "ink.danny.skunkcord"
 )
 
 # QML import path so "import components" works
-set_target_properties(DiscordQt PROPERTIES
+set_target_properties(Skunkcord PROPERTIES
     QT_QML_IMPORT_PATH "${QML_SOURCE_DIR}"
 )

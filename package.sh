@@ -1,14 +1,14 @@
 #!/bin/bash
-# Package Discord Qt for distribution
+# Package Skunkcord for distribution
 set -e
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Discord Qt - Release Packaging"
+echo "  Skunkcord - Release Packaging"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo
 
 # Build if needed
-if [ ! -f "target/release/discord_qt" ]; then
+if [ ! -f "target/release/skunkcord" ]; then
     echo "→ Building release binary..."
     cargo build --release
     echo
@@ -16,24 +16,24 @@ fi
 
 # Clean old package
 echo "→ Cleaning old package..."
-rm -rf discord-qt-release
+rm -rf skunkcord-release
 
 # Create package directory
 echo "→ Creating package structure..."
-mkdir -p discord-qt-release
+mkdir -p skunkcord-release
 
 # Copy executable
 echo "→ Copying executable..."
-cp target/release/discord_qt discord-qt-release/
+cp target/release/skunkcord skunkcord-release/
 
 # Copy QML files
 echo "→ Copying QML files..."
-cp -r src/qml discord-qt-release/
+cp -r src/qml skunkcord-release/
 
 # Create README
 echo "→ Creating README..."
-cat > discord-qt-release/README.txt << 'EOF'
-Discord Qt Client v0.2.0
+cat > skunkcord-release/README.txt << 'EOF'
+Skunkcord Client v0.2.0
 ========================
 
 A lightweight Discord client built with Rust and Qt.
@@ -54,18 +54,18 @@ Arch Linux:
 
 RUNNING
 -------
-  ./discord_qt
+  ./skunkcord
 
 You can provide your Discord token via:
-  - Environment variable: DISCORD_TOKEN=your_token ./discord_qt
-  - Command line: ./discord_qt --token your_token
+  - Environment variable: DISCORD_TOKEN=your_token ./skunkcord
+  - Command line: ./skunkcord --token your_token
   - Login screen when no token is provided
 
 DIRECTORY STRUCTURE
 -------------------
 The executable MUST be in the same directory as the 'qml' folder:
 
-  discord_qt          <- executable
+  skunkcord          <- executable
   qml/                <- QML files (required)
     main.qml
     Discord.js
@@ -77,26 +77,26 @@ Do not move the executable without the qml folder!
 SUPPORT
 -------
 For issues and documentation, visit:
-https://github.com/your-username/discord-qt
+https://github.com/skunkllc/skunkcord
 
 EOF
 
 # Set executable permission
-chmod +x discord-qt-release/discord_qt
+chmod +x skunkcord-release/skunkcord
 
 echo
 echo "✓ Package created successfully!"
 echo
-echo "Location: discord-qt-release/"
+echo "Location: skunkcord-release/"
 echo
 echo "Next steps:"
 echo "  1. Test the package:"
-echo "     cd discord-qt-release && ./discord_qt"
+echo "     cd skunkcord-release && ./skunkcord"
 echo
 echo "  2. Create a distributable archive:"
-echo "     tar -czf discord-qt-linux-$(uname -m).tar.gz discord-qt-release/"
+echo "     tar -czf skunkcord-linux-$(uname -m).tar.gz skunkcord-release/"
 echo
 echo "  3. Transfer the archive to another machine and extract:"
-echo "     tar -xzf discord-qt-linux-$(uname -m).tar.gz"
-echo "     cd discord-qt-release && ./discord_qt"
+echo "     tar -xzf skunkcord-linux-$(uname -m).tar.gz"
+echo "     cd skunkcord-release && ./skunkcord"
 echo

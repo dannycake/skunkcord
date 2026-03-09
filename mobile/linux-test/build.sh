@@ -10,8 +10,8 @@ echo "Building Rust library (mobile features)..."
 cd "$REPO_ROOT"
 cargo build --release --lib --no-default-features --features mobile
 
-# cdylib output on Linux is libdiscord_qt.so
-RUST_LIB="$REPO_ROOT/target/release/libdiscord_qt.so"
+# cdylib output on Linux is libskunkcord.so
+RUST_LIB="$REPO_ROOT/target/release/libskunkcord.so"
 if [ ! -f "$RUST_LIB" ]; then
     echo "Rust library not found: $RUST_LIB"
     exit 1
@@ -24,7 +24,7 @@ cmake -B build -S . -DRUST_LIB="$RUST_LIB" -G Ninja
 echo "Building..."
 cmake --build build
 
-BIN="$SCRIPT_DIR/build/discord_qt_mobile_test"
+BIN="$SCRIPT_DIR/build/skunkcord_mobile_test"
 export LD_LIBRARY_PATH="$REPO_ROOT/target/release${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 # So the QML engine finds QtQuick, QtQuick.Controls, etc. (system Qt6)
 QT_QML="$(qmake6 -query QT_INSTALL_QML 2>/dev/null)"

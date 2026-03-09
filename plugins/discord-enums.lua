@@ -1,4 +1,4 @@
---- Discord Qt Plugin API — Enums and constants
+--- Skunkcord Plugin API — Enums and constants
 --- Require this file in your plugin for enum values with intellisense:
 ---   local discord = require("discord-enums")
 

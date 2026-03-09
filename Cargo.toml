@@ -3,14 +3,14 @@
 # SPDX-License-Identifier: MIT
 
 [package]
-name = "discord_qt"
+name = "skunkcord"
 version = "0.2.0"
 edition = "2021"
 license = "MIT"
-default-run = "discord_qt"
+default-run = "skunkcord"
 
 [[bin]]
-name = "discord_qt"
+name = "skunkcord"
 path = "src/main.rs"
 
 [[bin]]
@@ -18,7 +18,7 @@ name = "test_gateway"
 path = "src/bin/test_gateway.rs"
 
 [lib]
-name = "discord_qt"
+name = "skunkcord"
 # Build as both rlib (for desktop binary) and cdylib (for mobile FFI)
 crate-type = ["rlib", "cdylib"]
 

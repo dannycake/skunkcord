@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build Discord Qt Rust library for iOS
+# Build Skunkcord Rust library for iOS
 # Requires: macOS with Xcode, Rust iOS targets
 #   rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 #
@@ -26,7 +26,7 @@ cargo build --release --target aarch64-apple-ios-sim --lib $FEATURES
 
 echo ""
 echo "Libraries built at:"
-echo "  target/aarch64-apple-ios/release/libdiscord_qt.a"
-echo "  target/aarch64-apple-ios-sim/release/libdiscord_qt.a"
+echo "  target/aarch64-apple-ios/release/libskunkcord.a"
+echo "  target/aarch64-apple-ios-sim/release/libskunkcord.a"
 echo ""
 echo "Link into your Xcode project as a static library."

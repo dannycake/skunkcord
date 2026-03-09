@@ -11,7 +11,7 @@
 //! # Example
 //!
 //! ```
-//! use discord_qt::rendering::markdown::parse_markdown;
+//! use skunkcord::rendering::markdown::parse_markdown;
 //!
 //! let html = parse_markdown("**bold** and *italic*");
 //! assert!(html.contains("<strong>bold</strong>"));

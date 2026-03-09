@@ -18,7 +18,7 @@
 //! # Example
 //!
 //! ```
-//! use discord_qt::captcha::{CaptchaChallenge, CaptchaDetection};
+//! use skunkcord::captcha::{CaptchaChallenge, CaptchaDetection};
 //!
 //! let body = r#"{"captcha_sitekey": "abc", "captcha_service": "hcaptcha"}"#;
 //! match CaptchaChallenge::from_response_body(body) {

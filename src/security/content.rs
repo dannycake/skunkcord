@@ -9,7 +9,7 @@
 //! # Example
 //!
 //! ```
-//! use discord_qt::security::content::{strip_tracking_params, sanitize_for_display};
+//! use skunkcord::security::content::{strip_tracking_params, sanitize_for_display};
 //!
 //! let url = "https://example.com/page?utm_source=twitter&id=123";
 //! let clean = strip_tracking_params(url);

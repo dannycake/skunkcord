@@ -23,7 +23,7 @@ make android-apk
 ```
 
 **What it does**:
-1. Builds `libdiscord_qt.so` for the target ABI (aarch64-linux-android, etc.) with `--no-default-features --features mobile`
+1. Builds `libskunkcord.so` for the target ABI (aarch64-linux-android, etc.) with `--no-default-features --features mobile`
 2. Runs `qt-cmake` from Qt for Android with the NDK toolchain
 3. Links shared C++ (`mobile/shared/main.cpp`, `AppController.cpp`) + Rust `.so`
 4. Bundles QML (main.qml, components, Discord.js) as Qt resources
@@ -38,11 +38,11 @@ make mobile-linux
 ```
 
 **What it does**:
-1. Builds `libdiscord_qt.so` (x86_64) with mobile features
+1. Builds `libskunkcord.so` (x86_64) with mobile features
 2. Builds the same shared C++ + QML (as resources) using your system Qt (Qt5 or Qt6)
 3. Runs the binary: validates **Rust FFI → C++ AppController → QML UI** without an emulator
 
-**Binary**: `mobile/linux-test/build/discord_qt_mobile_test`
+**Binary**: `mobile/linux-test/build/skunkcord_mobile_test`
 
 **Tested on this machine**: ✓ Builds with Qt5, loads QML from `qrc:/`, C FFI connects.
 
@@ -53,7 +53,7 @@ make android
 # Or: ./mobile/android/build.sh
 ```
 
-Builds `libdiscord_qt.so` for ARM64, ARMv7, x86_64. Use if you have a separate Android project (JNI/Kotlin).
+Builds `libskunkcord.so` for ARM64, ARMv7, x86_64. Use if you have a separate Android project (JNI/Kotlin).
 
 ## Architecture
 

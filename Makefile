@@ -1,4 +1,4 @@
-# Discord Qt Client — Makefile
+# Skunkcord Client — Makefile
 # Convenience targets for common development tasks
 
 # Qt paths (Ubuntu/Debian defaults; Qt 6)

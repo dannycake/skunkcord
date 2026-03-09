@@ -13,8 +13,8 @@
 //!   cargo run --bin ui_test           # desktop UI (1100x700)
 //!   cargo run --bin ui_test -- --mobile  # mobile UI (390x844)
 
-use discord_qt::bridge::{ChannelInfo, GuildInfo, LoginRequest, MemberInfo, MessageInfo, ReactionInfo, UiAction, UiUpdate};
-use discord_qt::ui::AppController;
+use skunkcord::bridge::{ChannelInfo, GuildInfo, LoginRequest, MemberInfo, MessageInfo, ReactionInfo, UiAction, UiUpdate};
+use skunkcord::ui::AppController;
 
 use qmetaobject::prelude::*;
 use qmetaobject::QObjectPinned;
@@ -601,7 +601,7 @@ fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::from_default_env()
-                .add_directive("discord_qt=info".parse().unwrap())
+                .add_directive("skunkcord=info".parse().unwrap())
                 .add_directive("ui_test=info".parse().unwrap()),
         )
         .init();
@@ -609,7 +609,7 @@ fn main() {
     let mobile_mode = std::env::args().any(|a| a == "--mobile");
 
     tracing::info!("═══════════════════════════════════════════════════════════");
-    tracing::info!("  Discord Qt UI Test Mode{}", if mobile_mode { " (MOBILE)" } else { "" });
+    tracing::info!("  Skunkcord UI Test Mode{}", if mobile_mode { " (MOBILE)" } else { "" });
     tracing::info!("  Version: {} (TEST BUILD)", env!("CARGO_PKG_VERSION"));
     tracing::info!("═══════════════════════════════════════════════════════════");
     tracing::info!("");

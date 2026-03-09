@@ -14,7 +14,7 @@ Window {
     visible: true
     width: 390
     height: 844
-    title: isLoggedIn ? (currentGuildName || "Discord") : "Login"
+    title: isLoggedIn ? (currentGuildName || "Skunkcord") : "Login"
     color: theme.bgBase
 
     // ─── Fonts ───

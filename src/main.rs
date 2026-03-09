@@ -2,27 +2,27 @@
 // Last modified: 2025-03-07
 // SPDX-License-Identifier: MIT
 
-//! Discord Qt Client
+//! Skunkcord Client
 //!
 //! A user-account Discord client built with Rust and Qt, featuring browser
 //! emulation for undetectable API access. OLED-black UI with JetBrains Mono.
 //!
 //! Usage:
-//!   DISCORD_TOKEN=token ./discord_qt           # Use env var
-//!   ./discord_qt                               # Interactive token prompt
-//!   ./discord_qt --token <token>               # CLI argument
+//!   DISCORD_TOKEN=token ./skunkcord            # Use env var
+//!   ./skunkcord                                # Interactive token prompt
+//!   ./skunkcord --token <token>                # CLI argument
 
-use discord_qt::app_runner::run_app_with_updates;
-use discord_qt::bridge::{BackendBridge, LoginRequest, UiAction, UiUpdate};
-use discord_qt::client::captcha_interceptor;
-use discord_qt::client::DiscordClient;
-use discord_qt::client::x_fingerprint::XFingerprintManager;
-use discord_qt::features::FeatureFlags;
-use discord_qt::fingerprint::BrowserFingerprint;
-use discord_qt::gateway::{Gateway, GatewayEvent};
-use discord_qt::storage::{AppSettings, Storage};
-use discord_qt::ui::AppController;
-use discord_qt::Result;
+use skunkcord::app_runner::run_app_with_updates;
+use skunkcord::bridge::{BackendBridge, LoginRequest, UiAction, UiUpdate};
+use skunkcord::client::captcha_interceptor;
+use skunkcord::client::DiscordClient;
+use skunkcord::client::x_fingerprint::XFingerprintManager;
+use skunkcord::features::FeatureFlags;
+use skunkcord::fingerprint::BrowserFingerprint;
+use skunkcord::gateway::{Gateway, GatewayEvent};
+use skunkcord::storage::{AppSettings, Storage};
+use skunkcord::ui::AppController;
+use skunkcord::Result;
 use qmetaobject::prelude::*;
 use qmetaobject::QObjectPinned;
 use std::io::{self, Write};
@@ -36,13 +36,13 @@ fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::from_default_env()
-                .add_directive("discord_qt=info".parse().unwrap()),
+                .add_directive("skunkcord=info".parse().unwrap()),
         )
         .init();
 
     println!("╔══════════════════════════════════════════╗");
     println!(
-        "║     Discord Qt Client v{}          ║",
+        "║     Skunkcord Client v{}          ║",
         env!("CARGO_PKG_VERSION")
     );
     println!("║     OLED · JetBrains Mono · Rust         ║");
@@ -254,7 +254,7 @@ async fn run_app(
             println!("  └─────────────────────────────────────┘");
 
             // Save session
-            let session = discord_qt::client::Session::new(
+            let session = skunkcord::client::Session::new(
                 token.clone(),
                 user.id.clone(),
                 std::collections::HashMap::new(),
@@ -379,12 +379,12 @@ async fn run_app(
 
 #[cfg(test)]
 mod tests {
-    use discord_qt::fingerprint::BrowserFingerprint;
+    use skunkcord::fingerprint::BrowserFingerprint;
 
     #[tokio::test]
     async fn test_client_creation() {
         let fingerprint = BrowserFingerprint::new_chrome();
-        let client = discord_qt::client::DiscordClient::with_fingerprint(fingerprint).await;
+        let client = skunkcord::client::DiscordClient::with_fingerprint(fingerprint).await;
         assert!(client.is_ok());
     }
 
@@ -411,9 +411,9 @@ async fn resolve_login_request(
         LoginRequest::SwitchAccount(account_id) => {
             let session = storage
                 .load_session(&account_id)?
-                .ok_or_else(|| discord_qt::DiscordError::Http("Session not found".to_string()))?;
+                .ok_or_else(|| skunkcord::DiscordError::Http("Session not found".to_string()))?;
             if session.is_stale() {
-                return Err(discord_qt::DiscordError::Http(
+                return Err(skunkcord::DiscordError::Http(
                     "Session expired".to_string(),
                 )
                 .into());
@@ -432,9 +432,9 @@ async fn resolve_login_request(
             #[cfg(feature = "wreq-auth")]
             {
                 // Use wreq (Chrome TLS/HTTP2 fingerprint) for login and MFA to avoid Discord/Cloudflare antibot
-                let wreq_client = discord_qt::client::wreq_auth::build_wreq_client()?;
+                let wreq_client = skunkcord::client::wreq_auth::build_wreq_client()?;
                 loop {
-                    let resp = discord_qt::client::wreq_auth::login_with_credentials_wreq(
+                    let resp = skunkcord::client::wreq_auth::login_with_credentials_wreq(
                         &wreq_client,
                         &fingerprint,
                         &email,
@@ -455,7 +455,7 @@ async fn resolve_login_request(
                                 let ticket = login_resp
                                     .ticket
                                     .clone()
-                                    .ok_or_else(|| discord_qt::DiscordError::Http("MFA required but no ticket".to_string()))?;
+                                    .ok_or_else(|| skunkcord::DiscordError::Http("MFA required but no ticket".to_string()))?;
                                 let login_instance_id = login_resp.login_instance_id.clone();
                                 let _ = update_tx.send(UiUpdate::MfaRequired {
                                     ticket: ticket.clone(),
@@ -477,7 +477,7 @@ async fn resolve_login_request(
                                         code,
                                         login_instance_id: inst_id,
                                     }) => {
-                                        let mfa_resp = discord_qt::client::wreq_auth::verify_mfa_totp_wreq(
+                                        let mfa_resp = skunkcord::client::wreq_auth::verify_mfa_totp_wreq(
                                             &wreq_client,
                                             &fingerprint,
                                             &t,
@@ -489,26 +489,26 @@ async fn resolve_login_request(
                                         return Ok(mfa_resp.token);
                                     }
                                     Some(LoginRequest::CancelMfa) => {
-                                        return Err(discord_qt::DiscordError::Http(
+                                        return Err(skunkcord::DiscordError::Http(
                                             "Login cancelled".to_string(),
                                         )
                                         .into());
                                     }
                                     _ => {
-                                        return Err(discord_qt::DiscordError::Http(
+                                        return Err(skunkcord::DiscordError::Http(
                                             "MFA required but no MfaCode received".to_string(),
                                         )
                                         .into());
                                     }
                                 }
                             }
-                            return Err(discord_qt::DiscordError::Http(
+                            return Err(skunkcord::DiscordError::Http(
                                 "Login response had no token and no MFA".to_string(),
                             )
                             .into());
                         }
                         Err(e) => {
-                            if let discord_qt::DiscordError::CaptchaRequired(_) = &e {
+                            if let skunkcord::DiscordError::CaptchaRequired(_) = &e {
                                 let challenge = captcha_interceptor::extract_challenge(&e);
                                 if let Some(c) = challenge {
                                     let _ = update_tx.send(UiUpdate::CaptchaRequired {
@@ -572,7 +572,7 @@ async fn resolve_login_request(
                                 let ticket = login_resp
                                     .ticket
                                     .clone()
-                                    .ok_or_else(|| discord_qt::DiscordError::Http("MFA required but no ticket".to_string()))?;
+                                    .ok_or_else(|| skunkcord::DiscordError::Http("MFA required but no ticket".to_string()))?;
                                 let login_instance_id = login_resp.login_instance_id.clone();
                                 let _ = update_tx.send(UiUpdate::MfaRequired {
                                     ticket: ticket.clone(),
@@ -600,26 +600,26 @@ async fn resolve_login_request(
                                         return Ok(mfa_resp.token);
                                     }
                                     Some(LoginRequest::CancelMfa) => {
-                                        return Err(discord_qt::DiscordError::Http(
+                                        return Err(skunkcord::DiscordError::Http(
                                             "Login cancelled".to_string(),
                                         )
                                         .into());
                                     }
                                     _ => {
-                                        return Err(discord_qt::DiscordError::Http(
+                                        return Err(skunkcord::DiscordError::Http(
                                             "MFA required but no MfaCode received".to_string(),
                                         )
                                         .into());
                                     }
                                 }
                             }
-                            return Err(discord_qt::DiscordError::Http(
+                            return Err(skunkcord::DiscordError::Http(
                                 "Login response had no token and no MFA".to_string(),
                             )
                             .into());
                         }
                         Err(e) => {
-                            if let discord_qt::DiscordError::CaptchaRequired(_) = &e {
+                            if let skunkcord::DiscordError::CaptchaRequired(_) = &e {
                                 let challenge = captcha_interceptor::extract_challenge(&e);
                                 if let Some(c) = challenge {
                                     let _ = update_tx.send(UiUpdate::CaptchaRequired {
@@ -654,7 +654,7 @@ async fn resolve_login_request(
             }
         }
         LoginRequest::CaptchaSolution { .. } | LoginRequest::MfaCode { .. } | LoginRequest::CancelMfa => {
-            Err(discord_qt::DiscordError::Http(
+            Err(skunkcord::DiscordError::Http(
                 "CaptchaSolution/MfaCode/CancelMfa must follow Credentials flow".to_string(),
             )
             .into())

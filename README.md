@@ -1,6 +1,6 @@
 <!-- Copyright (c) Skunk Ventures LLC | Last modified: 2025-03-07 | SPDX-License-Identifier: MIT -->
 
-# discord qt client
+# skunkcord client
 
 a user-account discord client built with rust and qt, featuring browser fingerprint emulation, comprehensive api coverage, voice chat with fake mute, and built-in client mod features.
 
@@ -111,7 +111,7 @@ full discord-flavored markdown → html:
 ## architecture
 
 ```
-discord-qt/
+skunkcord/
 ├── src/
 │   ├── main.rs                    # application entry point
 │   ├── lib.rs                     # library root, error types
@@ -216,7 +216,7 @@ sudo apt-get update && sudo apt-get install -y \
 #### build & test
 
 ```bash
-cd discord-qt
+cd skunkcord
 
 # set qt 6 paths (ubuntu/debian)
 export QT_INCLUDE_PATH=/usr/include/x86_64-linux-gnu/qt6
@@ -250,11 +250,11 @@ self-contained package with qt libraries included - **no qt installation require
 ```bash
 # creates ~34mb package that works on any linux system
 ./package-bundle.sh
-tar -czf discord-qt-linux-standalone.tar.gz discord-qt-bundle/
+tar -czf skunkcord-linux-standalone.tar.gz skunkcord-bundle/
 
 # on target machine (no qt needed!):
-tar -xzf discord-qt-linux-standalone.tar.gz
-cd discord-qt-bundle && ./discord_qt.sh
+tar -xzf skunkcord-linux-standalone.tar.gz
+cd skunkcord-bundle && ./skunkcord.sh
 ```
 
 ### option 2: minimal package
@@ -264,11 +264,11 @@ small package requiring qt 6 on target system:
 ```bash
 # creates ~3.6mb package (requires qt installation)
 ./package.sh
-tar -czf discord-qt-linux.tar.gz discord-qt-release/
+tar -czf skunkcord-linux.tar.gz skunkcord-release/
 
 # on target machine (qt 6 required):
-tar -xzf discord-qt-linux.tar.gz
-cd discord-qt-release && ./discord_qt
+tar -xzf skunkcord-linux.tar.gz
+cd skunkcord-release && ./skunkcord
 ```
 
 **comparison:**

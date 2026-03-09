@@ -1,13 +1,13 @@
 <!-- Copyright (c) Skunk Ventures LLC | Last modified: 2025-03-07 | SPDX-License-Identifier: MIT -->
 
-# Discord Qt — Maintenance Guide
+# Skunkcord — Maintenance Guide
 
 How to build, run, test, and make common changes.
 
 ## Build and run
 
 ```bash
-cd discord-qt
+cd skunkcord
 cargo build
 cargo build --release
 cargo run
@@ -61,7 +61,7 @@ Rust tests are next to the code. Use `ui_test` for manual UI checks.
 
 ## Debugging
 
-- Rust: `RUST_LOG=discord_qt=debug cargo run`.
+- Rust: `RUST_LOG=skunkcord=debug cargo run`.
 - QML: `console.log()`; Qt warnings on stderr.
 - Updates not in UI: ensure Timer calls `app.check_for_updates()` and `consume_*` result is applied to the right model/property.
 

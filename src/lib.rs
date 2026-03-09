@@ -2,7 +2,7 @@
 // Last modified: 2025-03-07
 // SPDX-License-Identifier: MIT
 
-//! Discord Qt Client Library
+//! Skunkcord Client Library
 //!
 //! A Discord user-account client using Qt for UI and Rust for the backend,
 //! with browser emulation to avoid detection.
