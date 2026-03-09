@@ -22,7 +22,7 @@ use crate::bridge::{LoginRequest, UiAction, UiUpdate};
 use crate::features::FeatureFlags;
 use crate::storage::Storage;
 
-/// Event type constants for the UI update callback (must match include/discord_qt.h).
+/// Event type constants for the UI update callback (must match include/skunkcord.h).
 pub mod event_type {
     pub const LOGIN_SUCCESS: i32 = 1;
     pub const LOGIN_FAILED: i32 = 2;
@@ -73,13 +73,13 @@ pub mod event_type {
 /// Global tokio runtime for FFI
 static RUNTIME: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
 
-/// Sender for login request (set once in discord_init)
+/// Sender for login request (set once in skunkcord_init)
 static LOGIN_TX: OnceLock<Mutex<Option<mpsc::Sender<LoginRequest>>>> = OnceLock::new();
 
-/// Sender for UI actions (set once in discord_init)
+/// Sender for UI actions (set once in skunkcord_init)
 static ACTION_TX: OnceLock<Mutex<Option<tokio::sync::mpsc::UnboundedSender<UiAction>>>> = OnceLock::new();
 
-/// Callback for UI updates (set by native code via discord_set_update_callback)
+/// Callback for UI updates (set by native code via skunkcord_set_update_callback)
 static UPDATE_CALLBACK: OnceLock<Mutex<Option<UiUpdateCallback>>> = OnceLock::new();
 
 type UiUpdateCallback = extern "C" fn(event_type: i32, json: *const c_char);
@@ -96,7 +96,7 @@ unsafe fn c_str_to_string(ptr: *const c_char) -> String {
     CStr::from_ptr(ptr).to_string_lossy().into_owned()
 }
 
-/// Helper: convert Rust string to C string (caller must free with discord_free_string)
+/// Helper: convert Rust string to C string (caller must free with skunkcord_free_string)
 fn string_to_c(s: String) -> *mut c_char {
     CString::new(s).unwrap_or_default().into_raw()
 }
@@ -160,9 +160,9 @@ fn event_type_and_json(update: &UiUpdate) -> Option<(i32, String)> {
 /// Starts the backend worker and update forwarder threads.
 /// Returns 0 on success, -1 on error.
 #[no_mangle]
-pub extern "C" fn discord_init() -> i32 {
+pub extern "C" fn skunkcord_init() -> i32 {
     let _ = tracing_subscriber::fmt()
-        .with_env_filter("discord_qt=info")
+        .with_env_filter("skunkcord=info")
         .try_init();
 
     let _ = get_runtime();
@@ -238,7 +238,7 @@ pub extern "C" fn discord_init() -> i32 {
 /// Register the callback for UI updates. The callback is invoked with (event_type, json).
 /// The json pointer is valid only for the duration of the callback.
 #[no_mangle]
-pub extern "C" fn discord_set_update_callback(cb: UiUpdateCallback) {
+pub extern "C" fn skunkcord_set_update_callback(cb: UiUpdateCallback) {
     if let Some(m) = UPDATE_CALLBACK.get() {
         if let Ok(mut g) = m.lock() {
             *g = Some(cb);
@@ -248,7 +248,7 @@ pub extern "C" fn discord_set_update_callback(cb: UiUpdateCallback) {
 
 /// Free a string returned by the library
 #[no_mangle]
-pub unsafe extern "C" fn discord_free_string(ptr: *mut c_char) {
+pub unsafe extern "C" fn skunkcord_free_string(ptr: *mut c_char) {
     if !ptr.is_null() {
         let _ = CString::from_raw(ptr);
     }
@@ -256,7 +256,7 @@ pub unsafe extern "C" fn discord_free_string(ptr: *mut c_char) {
 
 /// Get the library version
 #[no_mangle]
-pub extern "C" fn discord_version() -> *mut c_char {
+pub extern "C" fn skunkcord_version() -> *mut c_char {
     string_to_c(env!("CARGO_PKG_VERSION").to_string())
 }
 
@@ -265,7 +265,7 @@ pub extern "C" fn discord_version() -> *mut c_char {
 /// Send a login token to the backend. The backend will validate and connect.
 /// Returns 0 on success, -1 if init not done or send failed.
 #[no_mangle]
-pub unsafe extern "C" fn discord_login(token: *const c_char) -> i32 {
+pub unsafe extern "C" fn skunkcord_login(token: *const c_char) -> i32 {
     let t = c_str_to_string(token);
     if let Some(m) = LOGIN_TX.get() {
         if let Ok(g) = m.lock() {
@@ -279,7 +279,7 @@ pub unsafe extern "C" fn discord_login(token: *const c_char) -> i32 {
 
 /// Send logout action (disconnects gateway and clears session from backend).
 #[no_mangle]
-pub extern "C" fn discord_logout() -> i32 {
+pub extern "C" fn skunkcord_logout() -> i32 {
     send_action(UiAction::Logout)
 }
 
@@ -287,13 +287,13 @@ pub extern "C" fn discord_logout() -> i32 {
 
 /// Select a guild (empty string = DMs / Home).
 #[no_mangle]
-pub unsafe extern "C" fn discord_select_guild(guild_id: *const c_char) -> i32 {
+pub unsafe extern "C" fn skunkcord_select_guild(guild_id: *const c_char) -> i32 {
     send_action(UiAction::SelectGuild(c_str_to_string(guild_id)))
 }
 
 /// Select a channel (triggers message load). channel_type: 0 = guild text, 1 = DM, etc.
 #[no_mangle]
-pub unsafe extern "C" fn discord_select_channel(channel_id: *const c_char, channel_type: u8) -> i32 {
+pub unsafe extern "C" fn skunkcord_select_channel(channel_id: *const c_char, channel_type: u8) -> i32 {
     send_action(UiAction::SelectChannel(c_str_to_string(channel_id), channel_type))
 }
 
@@ -301,7 +301,7 @@ pub unsafe extern "C" fn discord_select_channel(channel_id: *const c_char, chann
 
 /// Send a message. silent: 1 = true, 0 = false.
 #[no_mangle]
-pub unsafe extern "C" fn discord_send_message(
+pub unsafe extern "C" fn skunkcord_send_message(
     channel_id: *const c_char,
     content: *const c_char,
     silent: i32,
@@ -315,13 +315,13 @@ pub unsafe extern "C" fn discord_send_message(
 
 /// Start typing in a channel.
 #[no_mangle]
-pub unsafe extern "C" fn discord_start_typing(channel_id: *const c_char) -> i32 {
+pub unsafe extern "C" fn skunkcord_start_typing(channel_id: *const c_char) -> i32 {
     send_action(UiAction::StartTyping(c_str_to_string(channel_id)))
 }
 
 /// Edit a message.
 #[no_mangle]
-pub unsafe extern "C" fn discord_edit_message(
+pub unsafe extern "C" fn skunkcord_edit_message(
     channel_id: *const c_char,
     message_id: *const c_char,
     content: *const c_char,
@@ -335,7 +335,7 @@ pub unsafe extern "C" fn discord_edit_message(
 
 /// Delete a message.
 #[no_mangle]
-pub unsafe extern "C" fn discord_delete_message(
+pub unsafe extern "C" fn skunkcord_delete_message(
     channel_id: *const c_char,
     message_id: *const c_char,
 ) -> i32 {
@@ -347,7 +347,7 @@ pub unsafe extern "C" fn discord_delete_message(
 
 /// Pin a message.
 #[no_mangle]
-pub unsafe extern "C" fn discord_pin_message(
+pub unsafe extern "C" fn skunkcord_pin_message(
     channel_id: *const c_char,
     message_id: *const c_char,
 ) -> i32 {
@@ -359,7 +359,7 @@ pub unsafe extern "C" fn discord_pin_message(
 
 /// Unpin a message.
 #[no_mangle]
-pub unsafe extern "C" fn discord_unpin_message(
+pub unsafe extern "C" fn skunkcord_unpin_message(
     channel_id: *const c_char,
     message_id: *const c_char,
 ) -> i32 {
@@ -371,13 +371,13 @@ pub unsafe extern "C" fn discord_unpin_message(
 
 /// Open pinned messages for a channel.
 #[no_mangle]
-pub unsafe extern "C" fn discord_open_pins(channel_id: *const c_char) -> i32 {
+pub unsafe extern "C" fn skunkcord_open_pins(channel_id: *const c_char) -> i32 {
     send_action(UiAction::OpenPins(c_str_to_string(channel_id)))
 }
 
 /// Add a reaction. emoji: unicode or ":name:id".
 #[no_mangle]
-pub unsafe extern "C" fn discord_add_reaction(
+pub unsafe extern "C" fn skunkcord_add_reaction(
     channel_id: *const c_char,
     message_id: *const c_char,
     emoji: *const c_char,
@@ -391,7 +391,7 @@ pub unsafe extern "C" fn discord_add_reaction(
 
 /// Remove own reaction.
 #[no_mangle]
-pub unsafe extern "C" fn discord_remove_reaction(
+pub unsafe extern "C" fn skunkcord_remove_reaction(
     channel_id: *const c_char,
     message_id: *const c_char,
     emoji: *const c_char,
@@ -407,7 +407,7 @@ pub unsafe extern "C" fn discord_remove_reaction(
 
 /// Join a voice channel. guild_id can be null/empty for group DMs.
 #[no_mangle]
-pub unsafe extern "C" fn discord_join_voice(guild_id: *const c_char, channel_id: *const c_char) -> i32 {
+pub unsafe extern "C" fn skunkcord_join_voice(guild_id: *const c_char, channel_id: *const c_char) -> i32 {
     let g = c_str_to_string(guild_id);
     send_action(UiAction::JoinVoice {
         guild_id: if g.is_empty() { None } else { Some(g) },
@@ -416,45 +416,45 @@ pub unsafe extern "C" fn discord_join_voice(guild_id: *const c_char, channel_id:
 }
 
 #[no_mangle]
-pub extern "C" fn discord_leave_voice() -> i32 {
+pub extern "C" fn skunkcord_leave_voice() -> i32 {
     send_action(UiAction::LeaveVoice)
 }
 
 #[no_mangle]
-pub extern "C" fn discord_toggle_mute() -> i32 {
+pub extern "C" fn skunkcord_toggle_mute() -> i32 {
     send_action(UiAction::ToggleMute)
 }
 
 #[no_mangle]
-pub extern "C" fn discord_toggle_deafen() -> i32 {
+pub extern "C" fn skunkcord_toggle_deafen() -> i32 {
     send_action(UiAction::ToggleDeafen)
 }
 
 #[no_mangle]
-pub extern "C" fn discord_toggle_fake_mute() -> i32 {
+pub extern "C" fn skunkcord_toggle_fake_mute() -> i32 {
     send_action(UiAction::ToggleFakeMute)
 }
 
 #[no_mangle]
-pub extern "C" fn discord_toggle_fake_deafen() -> i32 {
+pub extern "C" fn skunkcord_toggle_fake_deafen() -> i32 {
     send_action(UiAction::ToggleFakeDeafen)
 }
 
 // ==================== Profile / status ====================
 
 #[no_mangle]
-pub unsafe extern "C" fn discord_set_feature_profile(_profile: *const c_char) -> i32 {
+pub unsafe extern "C" fn skunkcord_set_feature_profile(_profile: *const c_char) -> i32 {
     // No-op: feature profiles removed
     0
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn discord_set_status(status: *const c_char) -> i32 {
+pub unsafe extern "C" fn skunkcord_set_status(status: *const c_char) -> i32 {
     send_action(UiAction::SetStatus(c_str_to_string(status)))
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn discord_set_custom_status(text: *const c_char) -> i32 {
+pub unsafe extern "C" fn skunkcord_set_custom_status(text: *const c_char) -> i32 {
     let s = c_str_to_string(text);
     send_action(UiAction::SetCustomStatus(if s.is_empty() { None } else { Some(s) }))
 }
@@ -462,23 +462,23 @@ pub unsafe extern "C" fn discord_set_custom_status(text: *const c_char) -> i32 {
 // ==================== Other actions ====================
 
 #[no_mangle]
-pub unsafe extern "C" fn discord_switch_account(account_id: *const c_char) -> i32 {
+pub unsafe extern "C" fn skunkcord_switch_account(account_id: *const c_char) -> i32 {
     send_action(UiAction::SwitchAccount(c_str_to_string(account_id)))
 }
 
 #[no_mangle]
-pub extern "C" fn discord_mark_all_read() -> i32 {
+pub extern "C" fn skunkcord_mark_all_read() -> i32 {
     send_action(UiAction::MarkAllRead)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn discord_captcha_solved(token: *const c_char) -> i32 {
+pub unsafe extern "C" fn skunkcord_captcha_solved(token: *const c_char) -> i32 {
     send_action(UiAction::CaptchaSolved(c_str_to_string(token)))
 }
 
 /// Submit MFA TOTP code. ticket comes from MFA_REQUIRED event JSON.
 #[no_mangle]
-pub unsafe extern "C" fn discord_submit_mfa_code(ticket: *const c_char, code: *const c_char) -> i32 {
+pub unsafe extern "C" fn skunkcord_submit_mfa_code(ticket: *const c_char, code: *const c_char) -> i32 {
     let t = c_str_to_string(ticket);
     let c = c_str_to_string(code);
     if let Some(m) = LOGIN_TX.get() {
@@ -504,7 +504,7 @@ pub unsafe extern "C" fn discord_submit_mfa_code(ticket: *const c_char, code: *c
 
 /// Fetch user profile (for profile popup). guild_id can be null/empty.
 #[no_mangle]
-pub unsafe extern "C" fn discord_fetch_user_profile(
+pub unsafe extern "C" fn skunkcord_fetch_user_profile(
     user_id: *const c_char,
     guild_id: *const c_char,
 ) -> i32 {
@@ -520,7 +520,7 @@ pub unsafe extern "C" fn discord_fetch_user_profile(
 
 /// Set plugin enabled/disabled.
 #[no_mangle]
-pub unsafe extern "C" fn discord_set_plugin_enabled(
+pub unsafe extern "C" fn skunkcord_set_plugin_enabled(
     plugin_id: *const c_char,
     enabled: i32,
 ) -> i32 {
@@ -532,7 +532,7 @@ pub unsafe extern "C" fn discord_set_plugin_enabled(
 
 /// Notify backend that a plugin toolbar button was clicked.
 #[no_mangle]
-pub unsafe extern "C" fn discord_plugin_button_clicked(
+pub unsafe extern "C" fn skunkcord_plugin_button_clicked(
     plugin_id: *const c_char,
     button_id: *const c_char,
 ) -> i32 {
@@ -544,7 +544,7 @@ pub unsafe extern "C" fn discord_plugin_button_clicked(
 
 /// Submit a plugin modal form.
 #[no_mangle]
-pub unsafe extern "C" fn discord_plugin_modal_submitted(
+pub unsafe extern "C" fn skunkcord_plugin_modal_submitted(
     plugin_id: *const c_char,
     modal_id: *const c_char,
     fields_json: *const c_char,
@@ -560,7 +560,7 @@ pub unsafe extern "C" fn discord_plugin_modal_submitted(
 
 /// Set deleted message display style. Persists to storage directly.
 #[no_mangle]
-pub unsafe extern "C" fn discord_set_deleted_message_style(style: *const c_char) -> i32 {
+pub unsafe extern "C" fn skunkcord_set_deleted_message_style(style: *const c_char) -> i32 {
     let style_s = c_str_to_string(style);
     let valid = ["strikethrough", "faded", "deleted"].contains(&style_s.as_str());
     let style_s = if valid { style_s } else { "strikethrough".to_string() };
@@ -577,9 +577,9 @@ pub unsafe extern "C" fn discord_set_deleted_message_style(style: *const c_char)
 
 // ==================== Synchronous getters ====================
 
-/// Get deleted message display style (caller must free with discord_free_string).
+/// Get deleted message display style (caller must free with skunkcord_free_string).
 #[no_mangle]
-pub extern "C" fn discord_get_deleted_message_style() -> *mut c_char {
+pub extern "C" fn skunkcord_get_deleted_message_style() -> *mut c_char {
     let style = Storage::new()
         .ok()
         .and_then(|s| s.load_settings().ok())
@@ -597,7 +597,7 @@ pub extern "C" fn discord_get_deleted_message_style() -> *mut c_char {
 
 /// Check if a plugin is enabled. Returns 1 (true) or 0 (false).
 #[no_mangle]
-pub unsafe extern "C" fn discord_is_plugin_enabled(plugin_id: *const c_char) -> i32 {
+pub unsafe extern "C" fn skunkcord_is_plugin_enabled(plugin_id: *const c_char) -> i32 {
     let pid = c_str_to_string(plugin_id);
     let enabled = Storage::new()
         .ok()
@@ -607,9 +607,9 @@ pub unsafe extern "C" fn discord_is_plugin_enabled(plugin_id: *const c_char) -> 
     if enabled { 1 } else { 0 }
 }
 
-/// Get plugin list as JSON array (caller must free with discord_free_string).
+/// Get plugin list as JSON array (caller must free with skunkcord_free_string).
 #[no_mangle]
-pub extern "C" fn discord_get_plugin_list() -> *mut c_char {
+pub extern "C" fn skunkcord_get_plugin_list() -> *mut c_char {
     let plugins = crate::plugins::plugin_list_for_ui();
     let arr: Vec<serde_json::Value> = plugins
         .into_iter()
@@ -624,9 +624,9 @@ pub extern "C" fn discord_get_plugin_list() -> *mut c_char {
     string_to_c(serde_json::to_string(&arr).unwrap_or_else(|_| "[]".to_string()))
 }
 
-/// Get plugin enabled states as JSON object (caller must free with discord_free_string).
+/// Get plugin enabled states as JSON object (caller must free with skunkcord_free_string).
 #[no_mangle]
-pub extern "C" fn discord_get_plugin_enabled_states() -> *mut c_char {
+pub extern "C" fn skunkcord_get_plugin_enabled_states() -> *mut c_char {
     let settings = Storage::new()
         .ok()
         .and_then(|s| s.load_settings().ok())
@@ -643,13 +643,13 @@ pub extern "C" fn discord_get_plugin_enabled_states() -> *mut c_char {
 
 /// Open a DM with a user.
 #[no_mangle]
-pub unsafe extern "C" fn discord_open_dm(recipient_id: *const c_char) -> i32 {
+pub unsafe extern "C" fn skunkcord_open_dm(recipient_id: *const c_char) -> i32 {
     send_action(UiAction::OpenDm(c_str_to_string(recipient_id)))
 }
 
 /// Load more (older) messages for pagination.
 #[no_mangle]
-pub unsafe extern "C" fn discord_load_more_messages(
+pub unsafe extern "C" fn skunkcord_load_more_messages(
     channel_id: *const c_char,
     before_message_id: *const c_char,
 ) -> i32 {
@@ -660,22 +660,22 @@ pub unsafe extern "C" fn discord_load_more_messages(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn discord_search_gifs(query: *const c_char) -> i32 {
+pub unsafe extern "C" fn skunkcord_search_gifs(query: *const c_char) -> i32 {
     send_action(UiAction::SearchGifs(c_str_to_string(query)))
 }
 
 #[no_mangle]
-pub extern "C" fn discord_load_sticker_packs() -> i32 {
+pub extern "C" fn skunkcord_load_sticker_packs() -> i32 {
     send_action(UiAction::LoadStickerPacks)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn discord_load_guild_emojis(guild_id: *const c_char) -> i32 {
+pub unsafe extern "C" fn skunkcord_load_guild_emojis(guild_id: *const c_char) -> i32 {
     send_action(UiAction::LoadGuildEmojis(c_str_to_string(guild_id)))
 }
 
 #[no_mangle]
-pub extern "C" fn discord_get_mullvad_servers() -> i32 {
+pub extern "C" fn skunkcord_get_mullvad_servers() -> i32 {
     send_action(UiAction::GetMullvadServers)
 }
 
@@ -694,7 +694,7 @@ fn send_action(action: UiAction) -> i32 {
 
 /// Get mobile super properties JSON for Android
 #[no_mangle]
-pub extern "C" fn discord_android_super_properties() -> *mut c_char {
+pub extern "C" fn skunkcord_android_super_properties() -> *mut c_char {
     let props = crate::fingerprint::super_properties::MobileSuperProperties::android();
     let json = serde_json::to_string(&props).unwrap_or_default();
     string_to_c(json)
@@ -702,7 +702,7 @@ pub extern "C" fn discord_android_super_properties() -> *mut c_char {
 
 /// Get mobile super properties JSON for iOS
 #[no_mangle]
-pub extern "C" fn discord_ios_super_properties() -> *mut c_char {
+pub extern "C" fn skunkcord_ios_super_properties() -> *mut c_char {
     let props = crate::fingerprint::super_properties::MobileSuperProperties::ios();
     let json = serde_json::to_string(&props).unwrap_or_default();
     string_to_c(json)
@@ -714,36 +714,36 @@ mod tests {
 
     #[test]
     fn test_init() {
-        assert_eq!(discord_init(), 0);
+        assert_eq!(skunkcord_init(), 0);
     }
 
     #[test]
     fn test_version() {
-        let ver = discord_version();
+        let ver = skunkcord_version();
         unsafe {
             let s = CStr::from_ptr(ver).to_string_lossy();
             assert!(!s.is_empty());
-            discord_free_string(ver);
+            skunkcord_free_string(ver);
         }
     }
 
     #[test]
     fn test_android_props() {
-        let props = discord_android_super_properties();
+        let props = skunkcord_android_super_properties();
         unsafe {
             let s = CStr::from_ptr(props).to_string_lossy();
             assert!(s.contains("Android"));
-            discord_free_string(props);
+            skunkcord_free_string(props);
         }
     }
 
     #[test]
     fn test_ios_props() {
-        let props = discord_ios_super_properties();
+        let props = skunkcord_ios_super_properties();
         unsafe {
             let s = CStr::from_ptr(props).to_string_lossy();
             assert!(s.contains("iOS"));
-            discord_free_string(props);
+            skunkcord_free_string(props);
         }
     }
 }

@@ -1,6 +1,6 @@
 <!-- Copyright (c) Skunk Ventures LLC | Last modified: 2025-03-07 | SPDX-License-Identifier: MIT -->
 
-# Discord Qt — UI and QML
+# Skunkcord — UI and QML
 
 This document describes the QML UI so developers can change layouts, styling, and behavior without breaking the app.
 

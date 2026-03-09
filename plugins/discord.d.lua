@@ -1,5 +1,5 @@
 ---@meta
---- Discord Qt Plugin API — type definitions for Lua Language Server (LuaLS) intellisense
+--- Skunkcord Plugin API — type definitions for Lua Language Server (LuaLS) intellisense
 --- Place this file in your plugin directory or add to workspace for autocomplete.
 
 ---@class discord

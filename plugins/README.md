@@ -1,8 +1,8 @@
 <!-- Copyright (c) Skunk Ventures LLC | Last modified: 2025-03-07 | SPDX-License-Identifier: MIT -->
 
-# Discord Qt Plugins
+# Skunkcord Plugins
 
-This directory contains built-in and user-installed plugins for Discord Qt.
+This directory contains built-in and user-installed plugins for Skunkcord.
 
 ## Lua Intellisense (LuaLS)
 
@@ -23,7 +23,7 @@ Each plugin is a directory containing:
 
 ## Built-in Plugins
 
-These plugins ship with Discord Qt (sorted by priority):
+These plugins ship with Skunkcord (sorted by priority):
 
 | Plugin | Description |
 |--------|-------------|
@@ -51,9 +51,9 @@ Plugins can be installed from git repositories:
 Example: Clone a plugin repo into the plugins directory:
 
 ```bash
-# Plugins directory: ~/.local/share/discord-qt/DiscordQt/plugins/ (Linux)
-cd ~/.local/share/discord-qt/DiscordQt/plugins/
-git clone https://github.com/example/discord-qt-my-plugin
+# Plugins directory: ~/.local/share/skunkcord/Skunkcord/plugins/ (Linux)
+cd ~/.local/share/skunkcord/Skunkcord/plugins/
+git clone https://github.com/example/skunkcord-my-plugin
 ```
 
 **Refresh from disk**: Use the "Refresh from disk" button in Settings → Plugins to re-scan the plugins directory after adding or removing plugins manually.

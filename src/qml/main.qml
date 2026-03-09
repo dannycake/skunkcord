@@ -18,7 +18,7 @@ Window {
     height: 700
     minimumWidth: 700
     minimumHeight: 400
-    title: isLoggedIn ? (currentGuildName || "Discord") : "Login"
+    title: isLoggedIn ? (currentGuildName || "Skunkcord") : "Login"
     color: theme.bgBase
 
     // ─── Fonts ───

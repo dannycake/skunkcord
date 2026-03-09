@@ -3,11 +3,11 @@
 #include <QQmlContext>
 #include "AppController.h"
 
-extern "C" int discord_init(void);
+extern "C" int skunkcord_init(void);
 
 int main(int argc, char *argv[])
 {
-    if (discord_init() != 0)
+    if (skunkcord_init() != 0)
         return -1;
 
     QGuiApplication app(argc, argv);

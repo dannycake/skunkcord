@@ -1,8 +1,8 @@
 # Build artifacts
 /target/
 *.tar.gz
-discord-qt-bundle/
-discord-qt-release/
+skunkcord-bundle/
+skunkcord-release/
 PACKAGING-SUMMARY.txt
 mobile/linux-test/build/
 mobile/**/build/

@@ -20,8 +20,8 @@ Do this from a browser at [developer.apple.com](https://developer.apple.com) and
 1. Go to **Certificates, Identifiers & Profiles** → **Identifiers**.
 2. Click **+** to add a new identifier.
 3. Choose **App IDs** → **App** → Continue.
-4. **Description:** e.g. “Discord Qt”.
-5. **Bundle ID:** choose **Explicit** and enter your bundle ID (the project uses `ink.danny.discordqt` — see `mobile/ios/qt/CMakeLists.txt`).
+4. **Description:** e.g. “Skunkcord”.
+5. **Bundle ID:** choose **Explicit** and enter your bundle ID (the project uses `ink.danny.skunkcord` — see `mobile/ios/qt/CMakeLists.txt`).
 6. **Capabilities** — enable what you need:
    - **Push Notifications** — required for remote (APNs) and local notification support. Enable it for the main app ID.
    - **App Groups** — required if you add a **Share Extension** (share sheet / “share grid”) or Notification Service/Content extensions; the main app and extension share a group (e.g. `group.com.yourname.discordqt`). Create the group under **Identifiers** → **App Groups** first, then enable “App Groups” on the App ID and select that group.
@@ -29,9 +29,9 @@ Do this from a browser at [developer.apple.com](https://developer.apple.com) and
 8. **Certificates** — see [Create the certificate (CSR and .p12)](#create-the-certificate-csr-and-p12) below to generate a CSR and then the certificate.
 9. **Profiles** → create a **Distribution** provisioning profile (App Store), select this App ID and certificate, then download the `.mobileprovision` file.
 
-If you add a **Share Extension** later, create a **second** App ID with bundle ID `ink.danny.discordqt.ShareExtension`, enable **App Groups** (same group as the main app), and add a separate provisioning profile for that ID.
+If you add a **Share Extension** later, create a **second** App ID with bundle ID `ink.danny.skunkcord.ShareExtension`, enable **App Groups** (same group as the main app), and add a separate provisioning profile for that ID.
 
-**Summary:** The project bundle ID is `ink.danny.discordqt`. Create the same App ID in the portal and enable **Push Notifications** and **App Groups** (create the group under Identifiers → App Groups first) as needed.
+**Summary:** The project bundle ID is `ink.danny.skunkcord`. Create the same App ID in the portal and enable **Push Notifications** and **App Groups** (create the group under Identifiers → App Groups first) as needed.
 
 ### 2. Create the certificate (CSR and .p12)
 
@@ -75,7 +75,7 @@ Apple asks you to **upload a Certificate Signing Request (CSR)** to create the c
 ### 4. Create the app in App Store Connect
 
 1. **App Store Connect** → **My Apps** → **+** → **New App**.
-2. Platform: iOS, name e.g. “Discord Qt”, select the App ID from step 1, set a SKU.
+2. Platform: iOS, name e.g. “Skunkcord”, select the App ID from step 1, set a SKU.
 3. You don’t need to submit for review; this creates the app and TestFlight.
 
 ## GitHub Secrets and Variables
@@ -115,5 +115,5 @@ If you have a Mac and want to build and run locally:
 2. Build the Rust lib:  
    `cargo build --release --target aarch64-apple-ios --lib --no-default-features --features mobile`
 3. From `mobile/ios/qt/`:  
-   `cmake -B build -G Xcode -DCMAKE_PREFIX_PATH=~/Qt/6.8.3/ios -DCMAKE_TOOLCHAIN_FILE=~/Qt/6.8.3/ios/lib/cmake/Qt6/qt.toolchain.cmake -DRUST_LIB=$PWD/../../target/aarch64-apple-ios/release/libdiscord_qt.a -DAPPLE_TEAM_ID=YOUR_TEAM_ID`  
-   then open `build/DiscordQt.xcodeproj` in Xcode and run on a device or simulator.
+   `cmake -B build -G Xcode -DCMAKE_PREFIX_PATH=~/Qt/6.8.3/ios -DCMAKE_TOOLCHAIN_FILE=~/Qt/6.8.3/ios/lib/cmake/Qt6/qt.toolchain.cmake -DRUST_LIB=$PWD/../../target/aarch64-apple-ios/release/libskunkcord.a -DAPPLE_TEAM_ID=YOUR_TEAM_ID`  
+   then open `build/Skunkcord.xcodeproj` in Xcode and run on a device or simulator.

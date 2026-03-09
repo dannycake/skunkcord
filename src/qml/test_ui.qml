@@ -15,7 +15,7 @@ Window {
     height: 700
     minimumWidth: 700
     minimumHeight: 400
-    title: "[TEST MODE] Discord Qt"
+    title: "[TEST MODE] Skunkcord"
     color: theme.bgBase
 
     // Test mode banner color

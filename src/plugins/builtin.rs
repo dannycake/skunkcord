@@ -50,7 +50,7 @@ fn message_logger_manifest() -> PluginManifest {
         description: "Track deleted and edited messages locally with full edit history and search"
             .to_string(),
         version: "1.0.0".to_string(),
-        author: "Discord Qt".to_string(),
+        author: "Skunkcord".to_string(),
         repository: None,
         options: vec![
             PluginOption {
@@ -124,7 +124,7 @@ fn fake_mute_manifest() -> PluginManifest {
         name: "Fake Mute".to_string(),
         description: "Appear muted to others while still receiving audio".to_string(),
         version: "1.0.0".to_string(),
-        author: "Discord Qt".to_string(),
+        author: "Skunkcord".to_string(),
         repository: None,
         options: vec![
             PluginOption {
@@ -162,7 +162,7 @@ fn fake_deafen_manifest() -> PluginManifest {
         name: "Fake Deafen".to_string(),
         description: "Appear deafened to others while still hearing everything".to_string(),
         version: "1.0.0".to_string(),
-        author: "Discord Qt".to_string(),
+        author: "Skunkcord".to_string(),
         repository: None,
         options: vec![PluginOption {
             key: "record_audio".to_string(),
@@ -188,7 +188,7 @@ fn blur_nsfw_manifest() -> PluginManifest {
         description: "Blur images and attachments in NSFW channels until you click to reveal"
             .to_string(),
         version: "1.0.0".to_string(),
-        author: "Discord Qt".to_string(),
+        author: "Skunkcord".to_string(),
         repository: None,
         options: vec![
             PluginOption {
@@ -226,7 +226,7 @@ fn show_hidden_channels_manifest() -> PluginManifest {
         name: "Show Hidden Channels".to_string(),
         description: "Display channels you don't have permission to view".to_string(),
         version: "1.0.0".to_string(),
-        author: "Discord Qt".to_string(),
+        author: "Skunkcord".to_string(),
         repository: None,
         options: vec![PluginOption {
             key: "show_as_muted".to_string(),
@@ -251,7 +251,7 @@ fn read_all_notifications_manifest() -> PluginManifest {
         name: "Read All Notifications".to_string(),
         description: "One-click button to mark all channels as read".to_string(),
         version: "1.0.0".to_string(),
-        author: "Discord Qt".to_string(),
+        author: "Skunkcord".to_string(),
         repository: None,
         options: vec![],
         events: vec![],
@@ -267,7 +267,7 @@ fn clear_urls_manifest() -> PluginManifest {
         description: "Strip tracking parameters (utm_*, fbclid, etc.) from URLs before sending"
             .to_string(),
         version: "1.0.0".to_string(),
-        author: "Discord Qt".to_string(),
+        author: "Skunkcord".to_string(),
         repository: None,
         options: vec![PluginOption {
             key: "strip_on_send".to_string(),
@@ -292,7 +292,7 @@ fn silent_messages_manifest() -> PluginManifest {
         name: "Silent Messages".to_string(),
         description: "Toggle to send messages without triggering notifications".to_string(),
         version: "1.0.0".to_string(),
-        author: "Discord Qt".to_string(),
+        author: "Skunkcord".to_string(),
         repository: None,
         options: vec![PluginOption {
             key: "default_silent".to_string(),
@@ -317,7 +317,7 @@ fn pin_dms_manifest() -> PluginManifest {
         name: "Pin DMs".to_string(),
         description: "Pin DM conversations to the top of the list".to_string(),
         version: "1.0.0".to_string(),
-        author: "Discord Qt".to_string(),
+        author: "Skunkcord".to_string(),
         repository: None,
         options: vec![],
         events: vec![],
@@ -332,7 +332,7 @@ fn no_reply_mention_manifest() -> PluginManifest {
         name: "No Reply Mention".to_string(),
         description: "Replies don't ping the original author by default".to_string(),
         version: "1.0.0".to_string(),
-        author: "Discord Qt".to_string(),
+        author: "Skunkcord".to_string(),
         repository: None,
         options: vec![],
         events: vec![],
@@ -347,7 +347,7 @@ fn image_zoom_manifest() -> PluginManifest {
         name: "Image Zoom".to_string(),
         description: "Click images to zoom in, scroll to pan".to_string(),
         version: "1.0.0".to_string(),
-        author: "Discord Qt".to_string(),
+        author: "Skunkcord".to_string(),
         repository: None,
         options: vec![PluginOption {
             key: "zoom_level".to_string(),
@@ -372,7 +372,7 @@ fn always_animate_manifest() -> PluginManifest {
         name: "Always Animate".to_string(),
         description: "Force animated avatars and emojis to always play".to_string(),
         version: "1.0.0".to_string(),
-        author: "Discord Qt".to_string(),
+        author: "Skunkcord".to_string(),
         repository: None,
         options: vec![],
         events: vec![],
@@ -387,7 +387,7 @@ fn custom_rpc_manifest() -> PluginManifest {
         name: "Custom RPC / arRPC".to_string(),
         description: "Game activity detection and custom rich presence".to_string(),
         version: "1.0.0".to_string(),
-        author: "Discord Qt".to_string(),
+        author: "Skunkcord".to_string(),
         repository: None,
         options: vec![PluginOption {
             key: "process_scan".to_string(),

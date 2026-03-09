@@ -15,9 +15,9 @@ use argon2::Argon2;
 use std::fs;
 
 /// Application identifier used in key derivation (must match between encrypt/decrypt).
-const KEY_DOMAIN: &[u8] = b"discord-qt-sessions-v1";
+const KEY_DOMAIN: &[u8] = b"skunkcord-sessions-v1";
 /// Fixed salt for Argon2 (deterministic per machine; no per-file salt needed for this use case).
-const ARGON2_SALT: &[u8] = b"discord-qt-sessions-salt";
+const ARGON2_SALT: &[u8] = b"skunkcord-sessions-salt";
 
 /// Length of the nonce in bytes (96 bits for AES-GCM).
 const NONCE_LEN: usize = 12;
@@ -83,7 +83,7 @@ fn machine_id() -> Vec<u8> {
     // Fallback: bind to user home so at least it's not the same on every machine
     let fallback = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
-        .unwrap_or_else(|_| "discord-qt-fallback".to_string());
+        .unwrap_or_else(|_| "skunkcord-fallback".to_string());
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
     let mut hasher = DefaultHasher::new();

@@ -10,7 +10,7 @@
     <string>manual</string>
     <key>provisioningProfiles</key>
     <dict>
-        <key>ink.danny.discordqt</key>
+        <key>ink.danny.skunkcord</key>
         <string>app store ios distribution</string>
     </dict>
     <key>signingCertificate</key>

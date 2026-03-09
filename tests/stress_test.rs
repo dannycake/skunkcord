@@ -6,15 +6,15 @@
 //!
 //! Verifies behavior under load and edge cases.
 
-use discord_qt::client::permissions::{
+use skunkcord::client::permissions::{
     compute_base_permissions, compute_channel_permissions, has_permission, PermOverwrite,
 };
-use discord_qt::client::Permission;
-use discord_qt::features::flags::FeatureFlags;
-use discord_qt::plugins::message_logger::MessageCache;
-use discord_qt::rendering::markdown::parse_markdown;
-use discord_qt::security::content::strip_tracking_params;
-use discord_qt::voice::udp::RtpHeader;
+use skunkcord::client::Permission;
+use skunkcord::features::flags::FeatureFlags;
+use skunkcord::plugins::message_logger::MessageCache;
+use skunkcord::rendering::markdown::parse_markdown;
+use skunkcord::security::content::strip_tracking_params;
+use skunkcord::voice::udp::RtpHeader;
 
 // ==================== Message Cache Stress ====================
 
@@ -22,7 +22,7 @@ use discord_qt::voice::udp::RtpHeader;
 fn test_message_cache_1000_inserts() {
     let mut cache = MessageCache::new(500);
     for i in 0..1000 {
-        cache.insert(discord_qt::plugins::message_logger::LoggedMessage {
+        cache.insert(skunkcord::plugins::message_logger::LoggedMessage {
             id: format!("msg_{}", i),
             channel_id: format!("ch_{}", i % 10),
             guild_id: Some("g1".to_string()),
@@ -48,7 +48,7 @@ fn test_message_cache_delete_preserves() {
     let mut cache = MessageCache::new(100);
     // Insert 50 messages, delete first 25
     for i in 0..50 {
-        cache.insert(discord_qt::plugins::message_logger::LoggedMessage {
+        cache.insert(skunkcord::plugins::message_logger::LoggedMessage {
             id: format!("m{}", i),
             channel_id: "ch1".to_string(),
             guild_id: None,
@@ -70,7 +70,7 @@ fn test_message_cache_delete_preserves() {
 
     // Insert 100 more — deleted ones should still be there
     for i in 50..150 {
-        cache.insert(discord_qt::plugins::message_logger::LoggedMessage {
+        cache.insert(skunkcord::plugins::message_logger::LoggedMessage {
             id: format!("m{}", i),
             channel_id: "ch1".to_string(),
             guild_id: None,
@@ -253,8 +253,8 @@ fn test_full_enables_everything_standard_does() {
 
 #[test]
 fn test_session_fingerprint_plausible() {
-    use discord_qt::client::Session;
-    use discord_qt::fingerprint::BrowserFingerprint;
+    use skunkcord::client::Session;
+    use skunkcord::fingerprint::BrowserFingerprint;
     use std::collections::HashMap;
 
     let fp = BrowserFingerprint::new_chrome();
@@ -272,8 +272,8 @@ fn test_session_fingerprint_plausible() {
 
 #[test]
 fn test_session_old_build_not_plausible() {
-    use discord_qt::client::Session;
-    use discord_qt::fingerprint::BrowserFingerprint;
+    use skunkcord::client::Session;
+    use skunkcord::fingerprint::BrowserFingerprint;
     use std::collections::HashMap;
 
     let mut fp = BrowserFingerprint::new_chrome();
@@ -294,7 +294,7 @@ fn test_session_old_build_not_plausible() {
 
 #[test]
 fn test_cookies_from_session() {
-    use discord_qt::client::DiscordCookies;
+    use skunkcord::client::DiscordCookies;
     use std::collections::HashMap;
 
     let mut cookies = HashMap::new();
@@ -314,20 +314,20 @@ fn test_cookies_from_session() {
 
 #[test]
 fn test_captcha_interceptor_on_400_with_captcha() {
-    use discord_qt::client::captcha_interceptor::check_for_captcha;
+    use skunkcord::client::captcha_interceptor::check_for_captcha;
 
     let body = r#"{"captcha_sitekey":"key123","captcha_service":"hcaptcha"}"#;
     let result = check_for_captcha(400, body);
     assert!(result.is_err());
     match result.unwrap_err() {
-        discord_qt::DiscordError::CaptchaRequired(_) => {} // correct
+        skunkcord::DiscordError::CaptchaRequired(_) => {} // correct
         e => panic!("Expected CaptchaRequired, got {:?}", e),
     }
 }
 
 #[test]
 fn test_captcha_interceptor_on_400_without_captcha() {
-    use discord_qt::client::captcha_interceptor::check_for_captcha;
+    use skunkcord::client::captcha_interceptor::check_for_captcha;
 
     let body = r#"{"message":"Missing Access","code":50001}"#;
     assert!(check_for_captcha(400, body).is_ok());
@@ -335,7 +335,7 @@ fn test_captcha_interceptor_on_400_without_captcha() {
 
 #[test]
 fn test_captcha_interceptor_on_200() {
-    use discord_qt::client::captcha_interceptor::check_for_captcha;
+    use skunkcord::client::captcha_interceptor::check_for_captcha;
     assert!(check_for_captcha(200, "{}").is_ok());
 }
 
@@ -343,7 +343,7 @@ fn test_captcha_interceptor_on_200() {
 
 #[test]
 fn test_captcha_state_transitions() {
-    use discord_qt::captcha::CaptchaState;
+    use skunkcord::captcha::CaptchaState;
 
     // Happy path
     let mut state = CaptchaState::Idle;
@@ -359,7 +359,7 @@ fn test_captcha_state_transitions() {
 
 #[test]
 fn test_captcha_expired_resets() {
-    use discord_qt::captcha::CaptchaState;
+    use skunkcord::captcha::CaptchaState;
 
     let state = CaptchaState::Expired;
     // After expired, should go back to ChallengeReceived
@@ -369,7 +369,7 @@ fn test_captcha_expired_resets() {
 
 #[test]
 fn test_captcha_cancel() {
-    use discord_qt::captcha::CaptchaState;
+    use skunkcord::captcha::CaptchaState;
 
     let state = CaptchaState::Cancelled;
     assert_eq!(state, CaptchaState::Cancelled);
@@ -379,7 +379,7 @@ fn test_captcha_cancel() {
 
 #[test]
 fn test_retry_includes_captcha_key_header() {
-    use discord_qt::client::captcha_interceptor::captcha_retry_headers;
+    use skunkcord::client::captcha_interceptor::captcha_retry_headers;
 
     let headers = captcha_retry_headers("P1_solved_token_abc", Some("rqtoken_xyz"));
     assert_eq!(headers.len(), 2);
@@ -398,7 +398,7 @@ fn test_retry_includes_captcha_key_header() {
 
 #[test]
 fn test_retry_without_rqtoken() {
-    use discord_qt::client::captcha_interceptor::captcha_retry_headers;
+    use skunkcord::client::captcha_interceptor::captcha_retry_headers;
 
     let headers = captcha_retry_headers("P1_token", None);
     assert_eq!(headers.len(), 1);
@@ -409,8 +409,8 @@ fn test_retry_without_rqtoken() {
 
 #[test]
 fn test_widget_dark_theme() {
-    use discord_qt::captcha::widget::generate_captcha_html;
-    use discord_qt::captcha::CaptchaChallenge;
+    use skunkcord::captcha::widget::generate_captcha_html;
+    use skunkcord::captcha::CaptchaChallenge;
 
     let challenge = CaptchaChallenge {
         captcha_service: "hcaptcha".to_string(),
@@ -431,7 +431,7 @@ fn test_widget_dark_theme() {
 
 #[test]
 fn test_feature_flags_all_metadata_present() {
-    let meta = discord_qt::features::FeatureFlags::all_metadata();
+    let meta = skunkcord::features::FeatureFlags::all_metadata();
     // Every metadata entry should have non-empty name and description
     for (key, m) in &meta {
         assert!(!m.name.is_empty(), "Empty name for key: {}", key);
@@ -446,7 +446,7 @@ fn test_feature_flags_all_metadata_present() {
 
 #[test]
 fn test_feature_flags_metadata_covers_all_risky_features() {
-    let meta = discord_qt::features::FeatureFlags::all_metadata();
+    let meta = skunkcord::features::FeatureFlags::all_metadata();
     let keys: Vec<&str> = meta.iter().map(|(k, _)| *k).collect();
 
     // All High risk features must have metadata

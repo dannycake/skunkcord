@@ -16,8 +16,8 @@ fn json_response(body: &serde_json::Value) -> ResponseTemplate {
         .insert_header("content-type", "application/json")
 }
 
-async fn test_client(server: &MockServer) -> discord_qt::client::DiscordClient {
-    let mut client = discord_qt::client::DiscordClient::new().await.unwrap();
+async fn test_client(server: &MockServer) -> skunkcord::client::DiscordClient {
+    let mut client = skunkcord::client::DiscordClient::new().await.unwrap();
     client.set_api_base(format!("{}/api", server.uri()));
     client.set_token("test_token".to_string()).await;
     client
@@ -123,7 +123,7 @@ async fn test_edit_message() {
         .await;
 
     let client = test_client(&server).await;
-    let edit = discord_qt::client::EditMessage {
+    let edit = skunkcord::client::EditMessage {
         content: Some("edited content".to_string()),
         embeds: None,
         flags: None,

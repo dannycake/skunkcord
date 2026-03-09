@@ -2,7 +2,7 @@
 
 # Building for Windows
 
-This guide covers three methods for building Discord Qt on Windows.
+This guide covers three methods for building Skunkcord on Windows.
 
 ## Option 1: GitHub Actions (Easiest)
 
@@ -13,7 +13,7 @@ The project now includes a Windows build workflow at `.github/workflows/build-wi
 Every push to `main` triggers a Windows build. Download artifacts from:
 1. Go to your GitHub repository → Actions tab
 2. Click on the latest workflow run
-3. Download `discord-qt-windows-x64` artifact
+3. Download `skunkcord-windows-x64` artifact
 
 ### Manual trigger
 
@@ -77,7 +77,7 @@ Build directly on a Windows machine (most reliable method).
 ```powershell
 # Open "x64 Native Tools Command Prompt for VS 2022" (or 2019)
 
-cd path\to\discord-qt
+cd path\to\skunkcord
 
 # Set Qt 6 environment variables
 $env:Qt6_DIR = "C:\Qt\6.5.3\msvc2019_64"
@@ -89,7 +89,7 @@ $env:PATH = "$env:Qt6_DIR\bin;$env:PATH"
 # Build
 cargo build --release
 
-# Binary will be at: target\release\discord_qt.exe
+# Binary will be at: target\release\skunkcord.exe
 ```
 
 ### Collecting dependencies for distribution
@@ -99,7 +99,7 @@ After building, you need to bundle Qt DLLs with your executable:
 ```powershell
 # Create distribution folder
 mkdir release-windows
-copy target\release\discord_qt.exe release-windows\
+copy target\release\skunkcord.exe release-windows\
 
 # Copy Qt 6 DLLs
 $qtBin = "C:\Qt\6.5.3\msvc2019_64\bin"
@@ -135,7 +135,7 @@ QmlImports = .
 "@ | Out-File -FilePath release-windows\qt.conf -Encoding UTF8
 
 # Optional: Use Qt's windeployqt tool (automatic)
-C:\Qt\6.5.3\msvc2019_64\bin\windeployqt.exe release-windows\discord_qt.exe --qmldir src\qml
+C:\Qt\6.5.3\msvc2019_64\bin\windeployqt.exe release-windows\skunkcord.exe --qmldir src\qml
 ```
 
 ## Option 3: Cross-Compilation from Linux (Advanced)
@@ -182,7 +182,7 @@ QMAKE = "/usr/bin/x86_64-w64-mingw32-qmake6"
 ### Build
 
 ```bash
-cd discord-qt
+cd skunkcord
 
 # Set up Qt 6 paths for Windows
 export QT_INCLUDE_PATH="/opt/qt6-windows-mingw/include"
@@ -191,7 +191,7 @@ export QT_LIBRARY_PATH="/opt/qt6-windows-mingw/lib"
 # Build
 cargo build --release --target x86_64-pc-windows-gnu
 
-# Binary: target/x86_64-pc-windows-gnu/release/discord_qt.exe
+# Binary: target/x86_64-pc-windows-gnu/release/skunkcord.exe
 ```
 
 ### Known issues with cross-compilation
@@ -205,7 +205,7 @@ cargo build --release --target x86_64-pc-windows-gnu
 
 ### "Qt6Core.dll not found" when running
 
-- Ensure Qt 6 DLLs are in the same directory as `discord_qt.exe`
+- Ensure Qt 6 DLLs are in the same directory as `skunkcord.exe`
 - Or add Qt bin directory to system PATH
 - Or use `windeployqt` to auto-collect dependencies
 
@@ -245,19 +245,19 @@ Use **Inno Setup** or **NSIS** to create a Windows installer:
 
 ```ini
 [Setup]
-AppName=Discord Qt
+AppName=Skunkcord
 AppVersion=0.2.0
-DefaultDirName={pf}\DiscordQt
-OutputBaseFilename=discord-qt-setup
+DefaultDirName={pf}\Skunkcord
+OutputBaseFilename=skunkcord-setup
 
 [Files]
 Source: "release-windows\*"; DestDir: "{app}"; Flags: recursesubdirs
 
 [Icons]
-Name: "{commondesktop}\Discord Qt"; Filename: "{app}\discord_qt.exe"
+Name: "{commondesktop}\Skunkcord"; Filename: "{app}\skunkcord.exe"
 ```
 
-Compile with Inno Setup Compiler to create `discord-qt-setup.exe`.
+Compile with Inno Setup Compiler to create `skunkcord-setup.exe`.
 
 ## Distribution checklist
 
@@ -290,4 +290,4 @@ git tag v0.2.0
 git push origin v0.2.0
 ```
 
-The workflow will automatically build and attach `discord-qt-windows-x64.zip` to the release.
+The workflow will automatically build and attach `skunkcord-windows-x64.zip` to the release.

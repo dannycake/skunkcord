@@ -58,15 +58,15 @@ make android
 # Or: ./mobile/android/build.sh
 ```
 
-This builds `libdiscord_qt.so` for ARM64, ARMv7, and x86_64 (emulator). Use `--no-default-features --features mobile` so desktop Qt dependencies are not built.
+This builds `libskunkcord.so` for ARM64, ARMv7, and x86_64 (emulator). Use `--no-default-features --features mobile` so desktop Qt dependencies are not built.
 
 Outputs:
 
-- `target/aarch64-linux-android/release/libdiscord_qt.so`
-- `target/armv7-linux-androideabi/release/libdiscord_qt.so`
-- `target/x86_64-linux-android/release/libdiscord_qt.so`
+- `target/aarch64-linux-android/release/libskunkcord.so`
+- `target/armv7-linux-androideabi/release/libskunkcord.so`
+- `target/x86_64-linux-android/release/libskunkcord.so`
 
-Copy into an Android project’s `jniLibs/` (e.g. `app/src/main/jniLibs/arm64-v8a/libdiscord_qt.so`) or use the Qt Android app in `mobile/android/qt/` as above.
+Copy into an Android project’s `jniLibs/` (e.g. `app/src/main/jniLibs/arm64-v8a/libskunkcord.so`) or use the Qt Android app in `mobile/android/qt/` as above.
 
 ## iOS
 
@@ -112,10 +112,10 @@ cd mobile/ios/qt
 cmake -B build -G Xcode \
   -DCMAKE_PREFIX_PATH=~/Qt/6.8.3/ios \
   -DCMAKE_TOOLCHAIN_FILE=~/Qt/6.8.3/ios/lib/cmake/Qt6/qt.toolchain.cmake \
-  -DRUST_LIB="$(pwd)/../../../target/aarch64-apple-ios/release/libdiscord_qt.a" \
+  -DRUST_LIB="$(pwd)/../../../target/aarch64-apple-ios/release/libskunkcord.a" \
   -DAPPLE_TEAM_ID=YOUR_TEAM_ID
 cmake --build build --config Release
-open build/DiscordQt.xcodeproj
+open build/Skunkcord.xcodeproj
 ```
 
 Then run on a device or simulator from Xcode. The iOS app uses shared C++ from **mobile/shared/** and the same QML as desktop.
@@ -136,7 +136,7 @@ make mobile-linux
 # Or: ./mobile/linux-test/build.sh
 ```
 
-This builds the Rust library with `--no-default-features --features mobile`, then builds the shared C++ app in **mobile/linux-test/** and runs it. The binary is `mobile/linux-test/build/discord_qt_mobile_test`; set `LD_LIBRARY_PATH` to `target/release` if you run it manually.
+This builds the Rust library with `--no-default-features --features mobile`, then builds the shared C++ app in **mobile/linux-test/** and runs it. The binary is `mobile/linux-test/build/skunkcord_mobile_test`; set `LD_LIBRARY_PATH` to `target/release` if you run it manually.
 
 ## Shared Architecture
 

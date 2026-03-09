@@ -1,6 +1,6 @@
 <!-- Copyright (c) Skunk Ventures LLC | Last modified: 2025-03-07 | SPDX-License-Identifier: MIT -->
 
-# Discord Qt — Architecture
+# Skunkcord — Architecture
 
 This document describes how the codebase is structured so developers can navigate and extend it.
 

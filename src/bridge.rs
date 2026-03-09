@@ -1518,7 +1518,7 @@ impl BackendBridge {
                 let endpoint = ev.endpoint.clone().unwrap_or_default();
                 let token = ev.token.clone();
                 // #region agent log
-                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/discord-qt/.cursor/debug.log") {
+                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/skunkcord/.cursor/debug.log") {
                     use std::io::Write;
                     let _ = writeln!(f, "{}", serde_json::json!({"hypothesisId":"A","location":"bridge:VoiceServerUpdate","message":"VoiceServerUpdate received","data":{"hasToken":!token.is_empty(),"hasEndpoint":!endpoint.is_empty(),"endpointLen":endpoint.len()}}));
                 }
@@ -1539,7 +1539,7 @@ impl BackendBridge {
 
                 if is_self {
                     // #region agent log
-                    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/discord-qt/.cursor/debug.log") {
+                    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/skunkcord/.cursor/debug.log") {
                         use std::io::Write;
                         let _ = writeln!(f, "{}", serde_json::json!({"hypothesisId":"B","location":"bridge:VoiceStateUpdate(self)","message":"VoiceStateUpdate self","data":{"sessionIdLen":vs.session_id.len(),"channelId":vs.channel_id.as_deref().unwrap_or("")}}));
                     }
@@ -2135,7 +2135,7 @@ impl BackendBridge {
         let has_token = cache.voice_server_token.as_ref().map_or(false, |t| !t.is_empty());
         let has_endpoint = cache.voice_server_endpoint.as_ref().map_or(false, |e| !e.is_empty());
         // #region agent log
-        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/discord-qt/.cursor/debug.log") {
+        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/skunkcord/.cursor/debug.log") {
             use std::io::Write;
             let _ = writeln!(f, "{}", serde_json::json!({"hypothesisId":"D","location":"bridge:try_start_voice_connection","message":"try_start_voice_connection","data":{"hasConn":has_conn,"hasSession":has_session,"hasChannel":has_channel,"hasToken":has_token,"hasEndpoint":has_endpoint}}));
         }
@@ -2177,7 +2177,7 @@ impl BackendBridge {
         let _ = self.update_tx.send(UiUpdate::VoiceConnectionProgress("connecting_gateway".to_string()));
         let info = voice_conn.info().await;
         // #region agent log
-        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/discord-qt/.cursor/debug.log") {
+        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/skunkcord/.cursor/debug.log") {
             use std::io::Write;
             let _ = writeln!(f, "{}", serde_json::json!({"hypothesisId":"C","location":"bridge:connect_voice_gateway","message":"calling connect_voice_gateway","data":{"endpoint":info.endpoint}}));
         }
@@ -2186,7 +2186,7 @@ impl BackendBridge {
             Ok(pair) => pair,
             Err(e) => {
                 // #region agent log
-                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/discord-qt/.cursor/debug.log") {
+                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/skunkcord/.cursor/debug.log") {
                     use std::io::Write;
                     let _ = writeln!(f, "{}", serde_json::json!({"hypothesisId":"C","location":"bridge:connect_voice_gateway","message":"connect_voice_gateway failed","data":{"err":e.to_string()}}));
                 }
@@ -2218,7 +2218,7 @@ async fn run_voice_gateway_driver(
     while let Ok(ev) = event_rx.recv().await {
         // #region agent log
         let ev_name = match &ev { VoiceGatewayEvent::Ready(_) => "Ready", VoiceGatewayEvent::SessionDescription(_) => "SessionDescription", VoiceGatewayEvent::Closed => "Closed", _ => "Other" };
-        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/discord-qt/.cursor/debug.log") {
+        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/skunkcord/.cursor/debug.log") {
             use std::io::Write;
             let _ = writeln!(f, "{}", serde_json::json!({"hypothesisId":"C","location":"bridge:run_voice_gateway_driver","message":"voice gateway event","data":{"ev":ev_name}}));
         }
@@ -3842,7 +3842,7 @@ pub async fn handle_ui_action(
                 let self_mute = c.voice_self_mute || c.voice_fake_mute;
                 let self_deaf = c.voice_self_deaf || c.voice_fake_deafen;
                 // #region agent log
-                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/discord-qt/.cursor/debug.log") {
+                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/skunkcord/.cursor/debug.log") {
                     use std::io::Write;
                     let _ = writeln!(f, "{}", serde_json::json!({"hypothesisId":"G","location":"bridge:ToggleMute","message":"ToggleMute","data":{"cacheVoiceSelfMuteAfterFlip":c.voice_self_mute,"self_muteSent":self_mute}}));
                 }

@@ -16,8 +16,8 @@ fn json(body: &serde_json::Value) -> ResponseTemplate {
         .insert_header("content-type", "application/json")
 }
 
-async fn client(server: &MockServer) -> discord_qt::client::DiscordClient {
-    let mut c = discord_qt::client::DiscordClient::new().await.unwrap();
+async fn client(server: &MockServer) -> skunkcord::client::DiscordClient {
+    let mut c = skunkcord::client::DiscordClient::new().await.unwrap();
     c.set_api_base(format!("{}/api", server.uri()));
     c.set_token("tok".to_string()).await;
     c
@@ -70,11 +70,11 @@ async fn test_create_forum_post() {
         .await;
 
     let c = client(&server).await;
-    let post = discord_qt::client::forums::CreateForumPost {
+    let post = skunkcord::client::forums::CreateForumPost {
         name: "My Post".to_string(),
         auto_archive_duration: None,
         rate_limit_per_user: None,
-        message: discord_qt::client::forums::ForumPostMessage {
+        message: skunkcord::client::forums::ForumPostMessage {
             content: Some("Hello forum!".to_string()),
             embeds: None,
             flags: None,
@@ -275,7 +275,7 @@ async fn test_get_json_success() {
         .await;
 
     let c = client(&server).await;
-    let guilds: Vec<discord_qt::client::Guild> = c.get_json("/users/@me/guilds").await.unwrap();
+    let guilds: Vec<skunkcord::client::Guild> = c.get_json("/users/@me/guilds").await.unwrap();
     assert_eq!(guilds.len(), 1);
     assert_eq!(guilds[0].name, "Guild");
 }
@@ -292,10 +292,10 @@ async fn test_get_json_404_error() {
         .await;
 
     let c = client(&server).await;
-    let result: Result<discord_qt::client::User, _> = c.get_json("/users/999").await;
+    let result: Result<skunkcord::client::User, _> = c.get_json("/users/999").await;
     assert!(result.is_err());
     match result.unwrap_err() {
-        discord_qt::DiscordError::NotFound(msg) => assert!(msg.contains("/users/999")),
+        skunkcord::DiscordError::NotFound(msg) => assert!(msg.contains("/users/999")),
         e => panic!("Expected NotFound, got {:?}", e),
     }
 }

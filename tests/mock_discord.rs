@@ -214,7 +214,7 @@ async fn test_send_message() {
     let client = create_test_client(&server).await;
     client.set_token("token".to_string()).await;
 
-    let msg = discord_qt::client::CreateMessage::text("Test message");
+    let msg = skunkcord::client::CreateMessage::text("Test message");
     let result = client.send_message("ch1", msg).await.unwrap();
     assert_eq!(result.content, "Test message");
     assert_eq!(result.id, "m_new");
@@ -278,7 +278,7 @@ async fn test_telemetry_blocked() {
         .await;
     assert!(result.is_err());
     match result.unwrap_err() {
-        discord_qt::DiscordError::TelemetryBlocked => {} // Expected
+        skunkcord::DiscordError::TelemetryBlocked => {} // Expected
         e => panic!("Expected TelemetryBlocked, got: {:?}", e),
     }
 }
@@ -287,7 +287,7 @@ async fn test_telemetry_blocked() {
 
 #[tokio::test]
 async fn test_captcha_detection_on_login() {
-    use discord_qt::captcha::{CaptchaChallenge, CaptchaDetection};
+    use skunkcord::captcha::{CaptchaChallenge, CaptchaDetection};
 
     let captcha_response = serde_json::json!({
         "captcha_key": ["incorrect-captcha-sol"],
@@ -469,8 +469,8 @@ async fn test_get_invite() {
 
 // ==================== Helper to create client pointing at mock server ====================
 
-async fn create_test_client(server: &MockServer) -> discord_qt::client::DiscordClient {
-    use discord_qt::client::DiscordClient;
+async fn create_test_client(server: &MockServer) -> skunkcord::client::DiscordClient {
+    use skunkcord::client::DiscordClient;
 
     // Point the client at our mock server instead of discord.com
     // The mock server URL is like http://127.0.0.1:PORT

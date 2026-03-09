@@ -36,7 +36,7 @@ impl Storage {
     /// Create a new storage manager
     pub fn new() -> Result<Self> {
         let project_dirs =
-            ProjectDirs::from("com", "discord-qt", "DiscordQt").ok_or_else(|| {
+            ProjectDirs::from("com", "skunkcord", "Skunkcord").ok_or_else(|| {
                 DiscordError::Io(std::io::Error::new(
                     std::io::ErrorKind::NotFound,
                     "Could not determine data directory",
