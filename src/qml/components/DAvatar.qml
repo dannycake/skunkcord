@@ -2,8 +2,8 @@
 // Last modified: 2025-03-07
 // SPDX-License-Identifier: MIT
 
-import QtQuick 2.15
-import QtGraphicalEffects 1.15
+import QtQuick
+import Qt5Compat.GraphicalEffects
 import "../Discord.js" as D
 
 Item {

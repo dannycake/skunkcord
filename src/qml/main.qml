@@ -2,12 +2,12 @@
 // Last modified: 2025-03-07
 // SPDX-License-Identifier: MIT
 
-import QtQuick 2.15
-import QtQuick.Window 2.15
-import QtQuick.Controls 2.15
-import QtQuick.Layouts 1.15
-import QtGraphicalEffects 1.15
-import QtWebEngine 1.10
+import QtQuick
+import QtQuick.Window
+import QtQuick.Controls
+import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
+import QtWebEngine
 import "Discord.js" as D
 import "components" 1.0
 
@@ -6954,9 +6954,12 @@ Window {
         radius: theme.radiusMed
         color: isSpeaking ? theme.bgTertiary : theme.bgSecondary
         border.width: isSpeaking ? 2 : 0
-        border.color: theme.voiceSpeaking
-
-        SequentialAnimation on border.opacity {
+        property real borderOpacity: 1.0
+        border.color: Qt.rgba(
+            theme.voiceSpeaking.r, theme.voiceSpeaking.g, theme.voiceSpeaking.b,
+            borderOpacity
+        )
+        SequentialAnimation on borderOpacity {
             running: participantCardRoot.isSpeaking
             loops: Animation.Infinite
             NumberAnimation { to: 0.9; duration: theme.animNormal; easing.type: Easing.InOutQuad }

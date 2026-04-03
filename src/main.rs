@@ -142,6 +142,10 @@ fn main() -> Result<()> {
         eprintln!("Please ensure the 'qml' directory is in the same location as the executable.");
         std::process::exit(1);
     }
+    // Set QML import path so relative imports resolve
+    if let Some(qml_dir) = qml_path.parent() {
+        engine.add_import_path(qml_dir.to_string_lossy().to_string().into());
+    }
     engine.load_file(qml_path.to_string_lossy().to_string().into());
     engine.exec();
     Ok(())
