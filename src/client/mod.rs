@@ -35,7 +35,6 @@ pub mod soundboard;
 pub mod stage;
 pub mod templates;
 pub mod threads;
-pub mod timing;
 pub mod typing;
 pub mod user_settings;
 pub mod webhooks;
@@ -51,7 +50,6 @@ pub use invites::*;
 pub use reactions::{Reaction, ReactionEmoji};
 pub use session::*;
 pub use threads::*;
-pub use timing::RequestTimer;
 
 use crate::fingerprint::BrowserFingerprint;
 use crate::proxy::ProxyConfig;
@@ -98,8 +96,6 @@ pub struct DiscordClient {
     api_base: String,
     /// Per-route rate limit tracker (wired into HTTP methods for proactive limiting)
     rate_limiter: Arc<tokio::sync::Mutex<rate_limiter::RateLimiter>>,
-    /// Request timing jitter (adds human-like delays between rapid requests)
-    request_timer: timing::RequestTimer,
 }
 
 /// Client behavior settings
@@ -158,7 +154,6 @@ impl DiscordClient {
             proxy_config: Arc::new(RwLock::new(None)),
             api_base: API_BASE.to_string(),
             rate_limiter: Arc::new(tokio::sync::Mutex::new(rate_limiter::RateLimiter::new())),
-            request_timer: timing::RequestTimer::new(true),
         })
     }
 
@@ -175,7 +170,6 @@ impl DiscordClient {
             proxy_config: Arc::new(RwLock::new(Some(proxy))),
             api_base: API_BASE.to_string(),
             rate_limiter: Arc::new(tokio::sync::Mutex::new(rate_limiter::RateLimiter::new())),
-            request_timer: timing::RequestTimer::new(true),
         })
     }
 
@@ -193,7 +187,6 @@ impl DiscordClient {
             proxy_config: Arc::new(RwLock::new(None)),
             api_base: base_url.to_string(),
             rate_limiter: Arc::new(tokio::sync::Mutex::new(rate_limiter::RateLimiter::new())),
-            request_timer: timing::RequestTimer::new(false), // No jitter in tests
         })
     }
 
@@ -400,11 +393,9 @@ impl DiscordClient {
     // ==================== Rate limiting helpers ====================
 
     /// Proactive rate limit: wait if we already know this route is exhausted.
-    /// Also adds human-like jitter between rapid requests.
     async fn pre_request(&self, method: &str, endpoint: &str) {
         let route = rate_limiter::RateLimiter::normalize_route(method, endpoint);
         self.rate_limiter.lock().await.wait_if_needed(&route).await;
-        self.request_timer.wait_before_request().await;
     }
 
     /// Update rate limit state from response headers so future requests

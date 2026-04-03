@@ -1147,17 +1147,43 @@ impl BackendBridge {
                     }
                 }
                 if let Some(ref gid) = guild_id {
-                    if let Some((color, name)) =
-                        get_author_role_info(&self.client, gid, &info.author_id, &self.bridge_cache).await
-                    {
-                        info.author_role_color = Some(color);
-                        info.author_role_name = Some(name);
+                    // Try local cache first, fall back to REST
+                    let author_info = {
+                        let c = self.bridge_cache.lock().await;
+                        resolve_role_color_local(gid, &info.author_id, &c)
+                    };
+                    match author_info {
+                        Some(Some((color, name))) => {
+                            info.author_role_color = Some(color);
+                            info.author_role_name = Some(name);
+                        }
+                        Some(None) => {} // cached as no-role
+                        None => {
+                            if let Some((color, name)) =
+                                get_author_role_info(&self.client, gid, &info.author_id, &self.bridge_cache).await
+                            {
+                                info.author_role_color = Some(color);
+                                info.author_role_name = Some(name);
+                            }
+                        }
                     }
                     if let Some(ref rid) = info.reply_author_id {
-                        if let Some((color, _)) =
-                            get_author_role_info(&self.client, gid, rid, &self.bridge_cache).await
-                        {
-                            info.reply_author_role_color = Some(color);
+                        let reply_info = {
+                            let c = self.bridge_cache.lock().await;
+                            resolve_role_color_local(gid, rid, &c)
+                        };
+                        match reply_info {
+                            Some(Some((color, _))) => {
+                                info.reply_author_role_color = Some(color);
+                            }
+                            Some(None) => {}
+                            None => {
+                                if let Some((color, _)) =
+                                    get_author_role_info(&self.client, gid, rid, &self.bridge_cache).await
+                                {
+                                    info.reply_author_role_color = Some(color);
+                                }
+                            }
                         }
                     }
                 }
@@ -2310,10 +2336,8 @@ pub struct BridgeCache {
     pub channels: HashMap<String, Vec<ChannelInfo>>,
     /// Cached DM channel list
     pub dm_channels: Option<Vec<DmChannelInfo>>,
-    /// Cached messages per channel_id with fetch timestamp
-    pub messages: HashMap<String, (Vec<MessageInfo>, std::time::Instant)>,
-    /// Message cache TTL — skip REST if messages are fresher than this
-    pub message_ttl: std::time::Duration,
+    /// Cached messages per channel_id (kept current by gateway events)
+    pub messages: HashMap<String, Vec<MessageInfo>>,
     /// Current user's ID (populated from READY)
     pub my_user_id: String,
     /// channel_id -> guild_id for resolving guild context (e.g. for role colors)
@@ -2360,7 +2384,6 @@ impl Default for BridgeCache {
             channels: HashMap::new(),
             dm_channels: None,
             messages: HashMap::new(),
-            message_ttl: std::time::Duration::from_secs(30),
             my_user_id: String::new(),
             channel_guild: HashMap::new(),
             role_info: HashMap::new(),
@@ -2446,7 +2469,7 @@ async fn resolve_typing_user_name(
             }
         }
     }
-    if let Some((messages, _)) = cache.messages.get(channel_id) {
+    if let Some(messages) = cache.messages.get(channel_id) {
         if let Some(msg) = messages.iter().find(|m| m.author_id == user_id) {
             return msg.author_name.clone();
         }
@@ -2478,7 +2501,7 @@ async fn apply_reaction_update_and_send(
 ) {
     let reactions = {
         let mut cache = bridge_cache.lock().await;
-        let Some((messages, _)) = cache.messages.get_mut(channel_id) else {
+        let Some(messages) = cache.messages.get_mut(channel_id) else {
             return;
         };
         let Some(msg) = messages.iter_mut().find(|m| m.id == message_id) else {
@@ -2516,6 +2539,93 @@ fn enrich_profile_json(raw_json: &str, note: &str) -> String {
     };
     enrich_profile_json_into(&mut v, note);
     serde_json::to_string(&v).unwrap_or_else(|_| raw_json.to_string())
+}
+
+/// Resolve author role color/name from cached data without any REST calls.
+/// Returns Some(info) if resolved from cache (info may be None meaning no colored role),
+/// or None if the user is not in cache and a REST fallback is needed.
+fn resolve_role_color_local(
+    guild_id: &str,
+    user_id: &str,
+    cache: &BridgeCache,
+) -> Option<Option<(String, String)>> {
+    // Check role_info cache first (populated by prior REST lookups)
+    let key = role_info_cache_key(guild_id, user_id);
+    if let Some(cached) = cache.role_info.get(&key) {
+        return Some(cached.clone());
+    }
+
+    // Try to resolve from member cache + guild roles cache
+    let members = cache.members.get(guild_id)?;
+    let member = members.iter().find(|m| m.user_id == user_id)?;
+
+    // If member already has role_color populated (from Op 14 / gateway), use it directly
+    if member.role_color.is_some() {
+        return Some(
+            member.role_color.as_ref().map(|color| {
+                (color.clone(), member.role_name.clone().unwrap_or_default())
+            }),
+        );
+    }
+
+    // Member is in cache but has no pre-resolved role color — cache miss
+    None
+}
+
+/// Resolve role colors for all unique authors in a message list.
+/// Uses local cache first, falls back to parallel REST for misses.
+async fn resolve_roles_for_messages(
+    msg_infos: &mut [MessageInfo],
+    guild_id: &str,
+    client: &Arc<DiscordClient>,
+    cache: &SharedBridgeCache,
+) {
+    // Collect unique user IDs from authors and reply authors
+    let mut unique_user_ids: HashSet<String> =
+        msg_infos.iter().map(|m| m.author_id.clone()).collect();
+    for msg in msg_infos.iter() {
+        if let Some(ref rid) = msg.reply_author_id {
+            unique_user_ids.insert(rid.clone());
+        }
+    }
+
+    // Phase 1: resolve locally from cache
+    let mut author_role_infos: HashMap<String, Option<(String, String)>> = HashMap::new();
+    let mut cache_misses: Vec<String> = Vec::new();
+    {
+        let c = cache.lock().await;
+        for user_id in &unique_user_ids {
+            match resolve_role_color_local(guild_id, user_id, &c) {
+                Some(info) => { author_role_infos.insert(user_id.clone(), info); }
+                None => { cache_misses.push(user_id.clone()); }
+            }
+        }
+    }
+
+    // Phase 2: parallel REST fallback for cache misses
+    if !cache_misses.is_empty() {
+        let futs: Vec<_> = cache_misses
+            .iter()
+            .map(|uid| get_author_role_info(client, guild_id, uid, cache))
+            .collect();
+        let results = futures_util::future::join_all(futs).await;
+        for (uid, info) in cache_misses.into_iter().zip(results) {
+            author_role_infos.insert(uid, info);
+        }
+    }
+
+    // Apply resolved colors to messages
+    for msg in msg_infos.iter_mut() {
+        if let Some((color, name)) = author_role_infos.get(&msg.author_id).and_then(|o| o.as_ref()) {
+            msg.author_role_color = Some(color.clone());
+            msg.author_role_name = Some(name.clone());
+        }
+        if let Some(ref rid) = msg.reply_author_id {
+            if let Some((color, _)) = author_role_infos.get(rid).and_then(|o| o.as_ref()) {
+                msg.reply_author_role_color = Some(color.clone());
+            }
+        }
+    }
 }
 
 /// Resolve the author's highest role (color + name) in the guild (first role with color != 0).
@@ -2888,23 +2998,22 @@ pub async fn handle_ui_action(
                 // Voice/stage channels — don't fetch messages
                 tracing::info!("Selected voice channel: {} (type {})", channel_id, channel_type);
             } else if crate::client::channel_type_supports_messages(channel_type) {
-                // Emit cached messages immediately if fresh enough
-                let should_refresh = {
+                // Emit cached messages immediately if available (gateway events keep them current)
+                let needs_fetch = {
                     let c = cache.lock().await;
-                    if let Some((cached_msgs, fetched_at)) = c.messages.get(&channel_id) {
-                        let age = fetched_at.elapsed();
+                    if let Some(cached_msgs) = c.messages.get(&channel_id) {
                         tracing::debug!(
-                            "Serving {} cached messages for channel {} (age={:?})",
-                            cached_msgs.len(), channel_id, age
+                            "Serving {} cached messages for channel {}",
+                            cached_msgs.len(), channel_id
                         );
                         let _ = update_tx.send(UiUpdate::MessagesLoaded(cached_msgs.clone()));
-                        age > c.message_ttl
+                        false
                     } else {
                         true // no cache, must fetch
                     }
                 };
 
-                if should_refresh {
+                if needs_fetch {
                     // Text-based channels — fetch recent messages
                     let my_uid = cache.lock().await.my_user_id.clone();
                     // Resolve guild_id for role colors (use cache when populated from READY/GuildCreate)
@@ -2934,29 +3043,7 @@ pub async fn handle_ui_action(
                                 messages.iter().map(|m| MessageInfo::from_message_with_context(m, &my_uid, &[])).collect();
                             // Fill author and reply-author role colors for guild channels
                             if let Some(ref gid) = guild_id {
-                                let mut unique_user_ids: HashSet<String> =
-                                    msg_infos.iter().map(|m| m.author_id.clone()).collect();
-                                for msg in &msg_infos {
-                                    if let Some(ref rid) = msg.reply_author_id {
-                                        unique_user_ids.insert(rid.clone());
-                                    }
-                                }
-                                let mut author_role_infos: HashMap<String, Option<(String, String)>> = HashMap::new();
-                                for user_id in unique_user_ids {
-                                    let info = get_author_role_info(client, gid, &user_id, cache).await;
-                                    author_role_infos.insert(user_id, info);
-                                }
-                                for msg in &mut msg_infos {
-                                    if let Some((color, name)) = author_role_infos.get(&msg.author_id).and_then(|o| o.as_ref()) {
-                                        msg.author_role_color = Some(color.clone());
-                                        msg.author_role_name = Some(name.clone());
-                                    }
-                                    if let Some(ref rid) = msg.reply_author_id {
-                                        if let Some((color, _)) = author_role_infos.get(rid).and_then(|o| o.as_ref()) {
-                                            msg.reply_author_role_color = Some(color.clone());
-                                        }
-                                    }
-                                }
+                                resolve_roles_for_messages(&mut msg_infos, gid, client, cache).await;
                             }
                             tracing::info!(
                                 "Loaded {} messages for channel {} (REST refresh)",
@@ -2966,7 +3053,7 @@ pub async fn handle_ui_action(
                             // Update cache
                             cache.lock().await.messages.insert(
                                 channel_id.clone(),
-                                (msg_infos.clone(), std::time::Instant::now()),
+                                msg_infos.clone(),
                             );
                             let _ = update_tx.send(UiUpdate::MessagesLoaded(msg_infos));
                         }
@@ -3161,29 +3248,7 @@ pub async fn handle_ui_action(
                     let mut msg_infos: Vec<MessageInfo> =
                         messages.iter().map(|m| MessageInfo::from_message_with_context(m, &my_uid, &[])).collect();
                     if let Some(ref gid) = guild_id {
-                        let mut unique_user_ids: HashSet<String> =
-                            msg_infos.iter().map(|m| m.author_id.clone()).collect();
-                        for msg in &msg_infos {
-                            if let Some(ref rid) = msg.reply_author_id {
-                                unique_user_ids.insert(rid.clone());
-                            }
-                        }
-                        let mut author_role_infos: HashMap<String, Option<(String, String)>> = HashMap::new();
-                        for user_id in unique_user_ids {
-                            let info = get_author_role_info(client, gid, &user_id, cache).await;
-                            author_role_infos.insert(user_id, info);
-                        }
-                        for msg in &mut msg_infos {
-                            if let Some((color, name)) = author_role_infos.get(&msg.author_id).and_then(|o| o.as_ref()) {
-                                msg.author_role_color = Some(color.clone());
-                                msg.author_role_name = Some(name.clone());
-                            }
-                            if let Some(ref rid) = msg.reply_author_id {
-                                if let Some((color, _)) = author_role_infos.get(rid).and_then(|o| o.as_ref()) {
-                                    msg.reply_author_role_color = Some(color.clone());
-                                }
-                            }
-                        }
+                        resolve_roles_for_messages(&mut msg_infos, gid, client, cache).await;
                     }
                     tracing::info!(
                         "Loaded {} more messages for channel {} (has_more={})",
@@ -3384,16 +3449,22 @@ pub async fn handle_ui_action(
         }
 
         UiAction::FetchUserProfile { user_id, guild_id } => {
-            let raw_json = match guild_id.as_ref() {
-                Some(gid) => client
-                    .get_user_profile_in_guild(&user_id, gid)
-                    .await
-                    .map(|(_, body)| body),
-                None => client.get_user_profile(&user_id).await.map(|(_, body)| body),
+            // Parallel fetch: profile + note
+            let profile_fut = async {
+                match guild_id.as_ref() {
+                    Some(gid) => client
+                        .get_user_profile_in_guild(&user_id, gid)
+                        .await
+                        .map(|(_, body)| body),
+                    None => client.get_user_profile(&user_id).await.map(|(_, body)| body),
+                }
             };
+            let note_fut = async {
+                client.get_note(&user_id).await.ok().flatten().unwrap_or_default()
+            };
+            let (raw_json, note) = tokio::join!(profile_fut, note_fut);
             match raw_json {
                 Ok(raw_json) => {
-                    let note = client.get_note(&user_id).await.ok().flatten().unwrap_or_default();
                     let mut v: serde_json::Value = match serde_json::from_str(&raw_json) {
                         Ok(x) => x,
                         Err(_) => {
@@ -3412,7 +3483,12 @@ pub async fn handle_ui_action(
                             let c = cache.lock().await;
                             c.guild_owners.get(gid).map(|s| s.as_str()) == Some(user_id.as_str())
                         };
-                        let member = client.get_guild_member(gid, &user_id).await.ok();
+                        let (member, roles) = tokio::join!(
+                            client.get_guild_member(gid, &user_id),
+                            client.get_member_roles(gid, &user_id)
+                        );
+                        let member = member.ok();
+                        let roles = roles.unwrap_or_default();
                         let perms_u64 = member
                             .as_ref()
                             .and_then(|m| m.permissions.as_ref())
@@ -3427,10 +3503,6 @@ pub async fn handle_ui_action(
                                 .map(String::from)
                                 .collect()
                         };
-                        let roles = client
-                            .get_member_roles(gid, &user_id)
-                            .await
-                            .unwrap_or_default();
                         let roles_json: Vec<serde_json::Value> = roles
                             .iter()
                             .map(|r| {
@@ -4040,9 +4112,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_bridge_cache_messages_ttl() {
+    async fn test_bridge_cache_messages_no_ttl() {
         let mut bc = BridgeCache::default();
-        bc.message_ttl = std::time::Duration::from_millis(50);
         let msgs = vec![MessageInfo {
             id: "m1".into(),
             channel_id: "ch1".into(),
@@ -4066,14 +4137,11 @@ mod tests {
             content_html: "hello".to_string(),
             reactions: vec![],
         }];
-        bc.messages.insert("ch1".into(), (msgs, std::time::Instant::now()));
-        // Fresh — should be within TTL
-        let (_, fetched_at) = bc.messages.get("ch1").unwrap();
-        assert!(fetched_at.elapsed() < bc.message_ttl);
-        // Wait for TTL to expire
-        tokio::time::sleep(std::time::Duration::from_millis(60)).await;
-        let (_, fetched_at) = bc.messages.get("ch1").unwrap();
-        assert!(fetched_at.elapsed() > bc.message_ttl);
+        bc.messages.insert("ch1".into(), msgs);
+        // Cache is available regardless of age
+        let cached = bc.messages.get("ch1").unwrap();
+        assert_eq!(cached.len(), 1);
+        assert_eq!(cached[0].id, "m1");
     }
 
     #[tokio::test]

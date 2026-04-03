@@ -1307,11 +1307,11 @@ impl UserProfile {
     pub fn get_joined_at(&self) -> Option<&str> {
         self.guild_member
             .as_ref()
-            .map(|m| m.joined_at.as_str())
+            .and_then(|m| m.joined_at.as_deref())
             .or_else(|| {
                 self.guild_member_profile
                     .as_ref()
-                    .map(|m| m.joined_at.as_str())
+                    .and_then(|m| m.joined_at.as_deref())
             })
     }
 }
@@ -1319,11 +1319,13 @@ impl UserProfile {
 /// Guild-specific member profile info
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GuildMemberProfile {
-    pub guild_id: String,
+    #[serde(default)]
+    pub guild_id: Option<String>,
     pub nick: Option<String>,
     pub avatar: Option<String>,
+    #[serde(default)]
     pub roles: Vec<String>,
-    pub joined_at: String,
+    pub joined_at: Option<String>,
     pub premium_since: Option<String>,
     pub pending: Option<bool>,
     pub communication_disabled_until: Option<String>,
