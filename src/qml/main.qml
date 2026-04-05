@@ -20,6 +20,8 @@ Window {
     minimumHeight: 400
     title: isLoggedIn ? (currentGuildName || "Skunkcord") : "Login"
     color: theme.bgBase
+    palette.highlight: theme.accent
+    palette.highlightedText: "#ffffff"
 
     // ─── Fonts ───
     FontLoader { id: jbMono; source: "https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/ttf/JetBrainsMono-Regular.ttf" }

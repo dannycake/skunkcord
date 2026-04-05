@@ -17,6 +17,8 @@ Window {
     minimumHeight: 400
     title: "[TEST MODE] Skunkcord"
     color: theme.bgBase
+    palette.highlight: theme.accent
+    palette.highlightedText: "#ffffff"
 
     // Test mode banner color
     readonly property color testBannerColor: "#ff6b35"
