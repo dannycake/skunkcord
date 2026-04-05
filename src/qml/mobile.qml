@@ -1144,9 +1144,9 @@ Window {
                             + (hasReplyPreview && !condensed ? 22 : 0)
                             + (isSystemMsg ? 32 : condensed ? (compactText.implicitHeight || 14) + 4 : (msgCol.implicitHeight || 20) + 12)
                             + (hasReactions ? 28 : 0)
-                        color: isMentioned ? "#faa61a12" : "transparent"
+                        color: isMentioned ? "#5865f212" : "transparent"
 
-                        Rectangle { visible: isMentioned; anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom; width: 3; color: "#FAA61A"; radius: 1 }
+                        Rectangle { visible: isMentioned; anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom; width: 3; color: theme.accent; radius: 1 }
 
                         // Day divider
                         Item {

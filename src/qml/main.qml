@@ -3014,7 +3014,7 @@ Window {
                                     : (msgRow.implicitHeight || 0) + 16)
                                 + (hasReactions ? 30 : 0)
                         color: isMentioned
-                               ? "#faa61a12"
+                               ? "#5865f212"
                                : msgHoverMa.containsMouse ? theme.bgModifier : "transparent"
                         Behavior on color { ColorAnimation { duration: theme.animFast } }
 
@@ -3025,7 +3025,7 @@ Window {
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
                             width: 3
-                            color: "#FAA61A"
+                            color: theme.accent
                             radius: 1
                         }
 
@@ -3311,13 +3311,13 @@ Window {
                                         width: mentionBadgeText.implicitWidth + 10
                                         height: 16
                                         radius: 8
-                                        color: "#FAA61A30"
+                                        color: theme.accentMuted
 
                                         Text {
                                             id: mentionBadgeText
                                             anchors.centerIn: parent
                                             text: msgDelegate.isMentionEveryone ? "@everyone" : "@mention"
-                                            color: "#FAA61A"
+                                            color: theme.accent
                                             font.family: fontFamily
                                             font.pixelSize: 9
                                             font.bold: true
