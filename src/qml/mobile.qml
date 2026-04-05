@@ -18,8 +18,8 @@ Window {
     color: theme.bgBase
 
     // ─── Fonts ───
-    FontLoader { id: ggSans; source: "https://fonts.gstatic.com/s/figtree/v9/_Xms-HUzqDCFdgfMm4S9DQ.woff2" }
-    readonly property string fontFamily: ggSans.status === FontLoader.Ready ? ggSans.name : "Segoe UI, Helvetica Neue, Helvetica, Arial, sans-serif"
+    FontLoader { id: jbMono; source: "https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/ttf/JetBrainsMono-Regular.ttf" }
+    readonly property string fontFamily: jbMono.status === FontLoader.Ready ? jbMono.name : "Consolas, Monaco, Courier New, monospace"
 
     // ─── Theme ───
     QtObject {

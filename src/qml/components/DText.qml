@@ -6,5 +6,5 @@ import QtQuick 2.15
 
 Text {
     id: root
-    font.family: parent && parent.fontFamily ? parent.fontFamily : "Segoe UI, Helvetica Neue, Helvetica, Arial, sans-serif"
+    font.family: parent && parent.fontFamily ? parent.fontFamily : "JetBrains Mono, Consolas, Monaco, Courier New, monospace"
 }
