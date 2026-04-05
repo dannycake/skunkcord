@@ -1,5 +1,4 @@
 // Copyright (c) Skunk Ventures LLC
-// Last modified: 2025-03-07
 // SPDX-License-Identifier: MIT
 
 import QtQuick 2.15
@@ -12,7 +11,7 @@ Row {
     property int badgeSize: 16
     spacing: 2
 
-    // BOT pill — blurple background, shown for bots
+    // BOT pill — text label, not an icon
     Rectangle {
         visible: isBot
         width: botText.implicitWidth + 6
@@ -30,129 +29,133 @@ Row {
         }
     }
 
-    // Nitro badge — from premiumType (1=classic, 2=nitro, 3=basic)
-    Rectangle {
+    // Nitro badge (premiumType 1=classic, 2=nitro, 3=basic)
+    Image {
         visible: premiumType >= 1 && premiumType <= 3
         width: badgeSize
         height: badgeSize
-        radius: 2
-        color: "#5865f2"
-
-        Text {
-            anchors.centerIn: parent
-            text: "✦"
-            color: "#ffffff"
-            font.pixelSize: 10
-            font.bold: true
-        }
+        source: "../assets/badges/nitro.png"
+        fillMode: Image.PreserveAspectFit
+        smooth: true
     }
 
     // Staff (1<<0)
-    Rectangle {
+    Image {
         visible: (publicFlags & 1) !== 0
         width: badgeSize
         height: badgeSize
-        radius: 2
-        color: "#5865f2"
-        Text { anchors.centerIn: parent; text: "⚙"; color: "#fff"; font.pixelSize: 10 }
+        source: "../assets/badges/staff.png"
+        fillMode: Image.PreserveAspectFit
+        smooth: true
     }
+
     // Partner (1<<1)
-    Rectangle {
+    Image {
         visible: (publicFlags & 2) !== 0
         width: badgeSize
         height: badgeSize
-        radius: 2
-        color: "#5865f2"
-        Text { anchors.centerIn: parent; text: "✓"; color: "#fff"; font.pixelSize: 10 }
+        source: "../assets/badges/partner.png"
+        fillMode: Image.PreserveAspectFit
+        smooth: true
     }
+
     // HypeSquad Events (1<<2)
-    Rectangle {
+    Image {
         visible: (publicFlags & 4) !== 0
         width: badgeSize
         height: badgeSize
-        radius: 2
-        color: "#f0b132"
-        Text { anchors.centerIn: parent; text: "★"; color: "#fff"; font.pixelSize: 10 }
+        source: "../assets/badges/hypesquad_events.png"
+        fillMode: Image.PreserveAspectFit
+        smooth: true
     }
+
     // Bug Hunter L1 (1<<3)
-    Rectangle {
+    Image {
         visible: (publicFlags & 8) !== 0
         width: badgeSize
         height: badgeSize
-        radius: 2
-        color: "#23a55a"
-        Text { anchors.centerIn: parent; text: "🐛"; color: "#fff"; font.pixelSize: 8 }
+        source: "../assets/badges/bug_hunter_l1.png"
+        fillMode: Image.PreserveAspectFit
+        smooth: true
     }
+
     // HypeSquad Bravery (1<<6)
-    Rectangle {
+    Image {
         visible: (publicFlags & 64) !== 0
         width: badgeSize
         height: badgeSize
-        radius: 2
-        color: "#9b59b6"
-        Text { anchors.centerIn: parent; text: "🛡"; color: "#fff"; font.pixelSize: 8 }
+        source: "../assets/badges/hypesquad_bravery.png"
+        fillMode: Image.PreserveAspectFit
+        smooth: true
     }
+
     // HypeSquad Brilliance (1<<7)
-    Rectangle {
+    Image {
         visible: (publicFlags & 128) !== 0
         width: badgeSize
         height: badgeSize
-        radius: 2
-        color: "#faa61a"
-        Text { anchors.centerIn: parent; text: "💡"; color: "#fff"; font.pixelSize: 8 }
+        source: "../assets/badges/hypesquad_brilliance.png"
+        fillMode: Image.PreserveAspectFit
+        smooth: true
     }
+
     // HypeSquad Balance (1<<8)
-    Rectangle {
+    Image {
         visible: (publicFlags & 256) !== 0
         width: badgeSize
         height: badgeSize
-        radius: 2
-        color: "#3ba55c"
-        Text { anchors.centerIn: parent; text: "⚖"; color: "#fff"; font.pixelSize: 8 }
+        source: "../assets/badges/hypesquad_balance.png"
+        fillMode: Image.PreserveAspectFit
+        smooth: true
     }
+
     // Early Supporter (1<<9)
-    Rectangle {
+    Image {
         visible: (publicFlags & 512) !== 0
         width: badgeSize
         height: badgeSize
-        radius: 2
-        color: "#9b59b6"
-        Text { anchors.centerIn: parent; text: "💜"; color: "#fff"; font.pixelSize: 8 }
+        source: "../assets/badges/early_supporter.png"
+        fillMode: Image.PreserveAspectFit
+        smooth: true
     }
+
     // Bug Hunter L2 (1<<14)
-    Rectangle {
+    Image {
         visible: (publicFlags & 16384) !== 0
         width: badgeSize
         height: badgeSize
-        radius: 2
-        color: "#f0b132"
-        Text { anchors.centerIn: parent; text: "🐛"; color: "#fff"; font.pixelSize: 8 }
+        source: "../assets/badges/bug_hunter_l2.png"
+        fillMode: Image.PreserveAspectFit
+        smooth: true
     }
+
     // Verified Bot Developer (1<<17)
-    Rectangle {
+    Image {
         visible: (publicFlags & 131072) !== 0
         width: badgeSize
         height: badgeSize
-        radius: 2
-        color: "#5865f2"
-        Text { anchors.centerIn: parent; text: "⚙"; color: "#fff"; font.pixelSize: 10 }
+        source: "../assets/badges/verified_bot_dev.png"
+        fillMode: Image.PreserveAspectFit
+        smooth: true
     }
+
     // Certified Moderator (1<<18)
-    Rectangle {
+    Image {
         visible: (publicFlags & 262144) !== 0
         width: badgeSize
         height: badgeSize
-        radius: 2
-        color: "#5865f2"
-        Text { anchors.centerIn: parent; text: "🛡"; color: "#fff"; font.pixelSize: 8 }
+        source: "../assets/badges/certified_moderator.png"
+        fillMode: Image.PreserveAspectFit
+        smooth: true
     }
+
     // Active Developer (1<<22)
-    Rectangle {
+    Image {
         visible: (publicFlags & 4194304) !== 0
         width: badgeSize
         height: badgeSize
-        radius: 2
-        color: "#23a55a"
-        Text { anchors.centerIn: parent; text: "▸"; color: "#fff"; font.pixelSize: 10 }
+        source: "../assets/badges/active_developer.png"
+        fillMode: Image.PreserveAspectFit
+        smooth: true
     }
 }
