@@ -10,8 +10,8 @@ Rectangle {
     property real sizeRatio: 1
     property int barWidth: 8
     property int minHeight: 40
-    property color barColor: "#202225"
-    property color barColorHover: "#2e3035"
+    property color barColor: "#1c1628"
+    property color barColorHover: "#271f35"
 
     width: barWidth
     height: Math.max(minHeight, parent ? parent.height * sizeRatio : minHeight)
