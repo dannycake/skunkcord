@@ -30,15 +30,15 @@ Window {
     QtObject {
         id: theme
 
-        // Backgrounds — Discord dark theme
-        readonly property color bgBase:       "#313338"
-        readonly property color bgPrimary:    "#313338"
-        readonly property color bgSecondary:  "#2b2d31"
-        readonly property color bgTertiary:   "#1e1f22"
-        readonly property color bgHover:      "#35373c"
-        readonly property color bgActive:     "#404249"
-        readonly property color bgElevated:   "#2b2d31"
-        readonly property color bgFloating:   "#111214"
+        // Backgrounds — Muted Violet theme
+        readonly property color bgBase:       "#2a2139"
+        readonly property color bgPrimary:    "#2a2139"
+        readonly property color bgSecondary:  "#211a30"
+        readonly property color bgTertiary:   "#191425"
+        readonly property color bgHover:      "#342b44"
+        readonly property color bgActive:     "#3e3450"
+        readonly property color bgElevated:   "#211a30"
+        readonly property color bgFloating:   "#110e1a"
         readonly property color bgModifier:   "#ffffff08"
 
         // Text — Discord hierarchy
@@ -61,12 +61,12 @@ Window {
         readonly property color info:      "#5e9eff"
 
         // Borders
-        readonly property color border:        "#3f4147"
+        readonly property color border:        "#3a3048"
         readonly property color borderSubtle:  "#ffffff0a"
-        readonly property color separator:     "#3f4147"
+        readonly property color separator:     "#3a3048"
 
         // Input and icons
-        readonly property color inputBg:       "#383a40"
+        readonly property color inputBg:       "#302840"
         readonly property color channelIcon:  "#80848e"
         readonly property color headerPrimary: "#f2f3f5"
 
@@ -88,7 +88,7 @@ Window {
         readonly property color voiceSpeakingGlow: "#23a55a40"
 
         // Stats panel
-        readonly property color statsBg:     "#0a0c10"
+        readonly property color statsBg:     "#0c0912"
         readonly property color statsFg:     "#40c463"
         readonly property color statsLabel:  "#6d7178"
         readonly property string monospace:  "JetBrains Mono, Fira Code, Consolas, monospace"
