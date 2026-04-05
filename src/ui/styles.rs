@@ -4,30 +4,30 @@
 
 //! UI Styles and Theming
 //!
-//! Blue-tinted OLED-friendly dark theme with JetBrains Mono font.
+//! Muted violet dark theme with JetBrains Mono font.
 //! All colors here are kept in sync with the QML theme object in `src/qml/main.qml`.
 
-/// Blue-tinted OLED-friendly color palette — near-black backgrounds with subtle blue
-/// undertones for visual depth, paired with Discord-inspired accent colors.
+/// Muted violet color palette — dark purple-tinted backgrounds for visual depth,
+/// paired with Discord-inspired accent colors.
 pub mod colors {
     // ── Background layers ──
 
-    /// Base background — near-true-black with faint blue
-    pub const BG_BASE: &str = "#04050a";
+    /// Base background — deep muted violet
+    pub const BG_BASE: &str = "#2a2139";
     /// Primary background — dark panels
-    pub const BG_PRIMARY: &str = "#0b0d13";
+    pub const BG_PRIMARY: &str = "#2a2139";
     /// Secondary background — elevated surfaces, sidebars
-    pub const BG_SECONDARY: &str = "#111318";
+    pub const BG_SECONDARY: &str = "#211a30";
     /// Tertiary background — cards, nested surfaces
-    pub const BG_TERTIARY: &str = "#181b22";
+    pub const BG_TERTIARY: &str = "#191425";
     /// Floating elements — popups, tooltips
-    pub const BG_FLOATING: &str = "#13151c";
+    pub const BG_FLOATING: &str = "#110e1a";
     /// Elevated elements — contextual menus, action bars
-    pub const BG_ELEVATED: &str = "#1a1d26";
+    pub const BG_ELEVATED: &str = "#211a30";
     /// Hover state
-    pub const BG_HOVER: &str = "#1e2129";
+    pub const BG_HOVER: &str = "#342b44";
     /// Selected / active state
-    pub const BG_ACTIVE: &str = "#262a34";
+    pub const BG_ACTIVE: &str = "#3e3450";
     /// Subtle white overlay for hover modifiers
     pub const BG_MODIFIER: &str = "#ffffff08";
 
@@ -82,11 +82,11 @@ pub mod colors {
     // ── Borders & separators ──
 
     /// Primary border color
-    pub const BORDER: &str = "#1f222a";
+    pub const BORDER: &str = "#3a3048";
     /// Subtle border (semi-transparent white)
     pub const BORDER_SUBTLE: &str = "#ffffff0a";
     /// Separator lines
-    pub const SEPARATOR: &str = "#1a1d24";
+    pub const SEPARATOR: &str = "#3a3048";
 
     // ── Misc ──
 
@@ -103,8 +103,8 @@ pub mod colors {
 
     /// Alias for BG_BASE
     pub const BG_PRIMARY_LEGACY: &str = BG_BASE;
-    /// Input field background — same as secondary
-    pub const INPUT_BG: &str = BG_SECONDARY;
+    /// Input field background
+    pub const INPUT_BG: &str = "#302840";
 }
 
 /// Font configuration
