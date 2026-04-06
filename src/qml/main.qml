@@ -1017,6 +1017,9 @@ Window {
                     model: guildModel
                     clip: true
                     spacing: 2
+                    highlightFollowsCurrentItem: false
+                    highlight: null
+                    currentIndex: -1
 
                     delegate: Item {
                         width: ListView.view.width
@@ -1232,6 +1235,9 @@ Window {
                     spacing: 1
                     boundsBehavior: Flickable.StopAtBounds
                     visible: currentGuildId !== ""
+                    highlightFollowsCurrentItem: false
+                    highlight: null
+                    currentIndex: -1
 
                     ScrollBar.vertical: ScrollBar {
                         policy: ScrollBar.AsNeeded
@@ -1537,6 +1543,9 @@ Window {
                             clip: true
                             spacing: 1
                             boundsBehavior: Flickable.StopAtBounds
+                            highlightFollowsCurrentItem: false
+                            highlight: null
+                            currentIndex: -1
 
                             ScrollBar.vertical: ScrollBar {
                                 policy: ScrollBar.AsNeeded
@@ -1781,6 +1790,9 @@ Window {
                         clip: true
                         spacing: 1
                         boundsBehavior: Flickable.StopAtBounds
+                        highlightFollowsCurrentItem: false
+                        highlight: null
+                        currentIndex: -1
 
                         ScrollBar.vertical: ScrollBar {
                             policy: ScrollBar.AsNeeded
@@ -2541,6 +2553,9 @@ Window {
                         clip: true
                         spacing: 2
                         boundsBehavior: Flickable.StopAtBounds
+                        highlightFollowsCurrentItem: false
+                        highlight: null
+                        currentIndex: -1
                         focus: false
 
                         ScrollBar.vertical: ScrollBar {
@@ -2745,6 +2760,9 @@ Window {
                     verticalLayoutDirection: ListView.BottomToTop
                     spacing: 0
                     boundsBehavior: Flickable.StopAtBounds
+                    highlightFollowsCurrentItem: false
+                    highlight: null
+                    currentIndex: -1
 
                     property bool hasMoreHistory: true
                     property bool isLoadingMore: false
@@ -4371,6 +4389,9 @@ Window {
                     clip: true
                     focus: false
                     spacing: 2
+                    highlightFollowsCurrentItem: false
+                    highlight: null
+                    currentIndex: -1
                     boundsBehavior: Flickable.StopAtBounds
 
                     ScrollBar.vertical: ScrollBar {
@@ -8788,6 +8809,9 @@ Window {
                 clip: true
                 spacing: 2
                 boundsBehavior: Flickable.StopAtBounds
+                highlightFollowsCurrentItem: false
+                highlight: null
+                currentIndex: -1
 
                 delegate: Rectangle {
                     width: switcherList.width
@@ -8942,6 +8966,9 @@ Window {
                 clip: true
                 spacing: 4
                 boundsBehavior: Flickable.StopAtBounds
+                highlightFollowsCurrentItem: false
+                highlight: null
+                currentIndex: -1
 
                 delegate: Item {
                     width: pinsList.width
@@ -9089,6 +9116,9 @@ Window {
                 Layout.bottomMargin: 8
                 clip: true
                 model: accountsList
+                highlightFollowsCurrentItem: false
+                highlight: null
+                currentIndex: -1
                 delegate: Rectangle {
                     width: accountSwitcherList.width - 16
                     height: 40
