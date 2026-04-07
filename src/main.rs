@@ -133,6 +133,11 @@ fn main() -> Result<()> {
     let app_controller = std::cell::RefCell::new(AppController::new(login_tx, action_tx, update_rx));
     let controller_ptr = unsafe { QObjectPinned::new(&app_controller) };
 
+    // Force Basic style for Qt Quick Controls to prevent KDE/Breeze/Adwaita
+    // platform themes from overriding palette colors (e.g. yellow selection highlight).
+    // Must be set BEFORE QmlEngine::new() creates the QApplication.
+    std::env::set_var("QT_QUICK_CONTROLS_STYLE", "Basic");
+
     // Load and run Qt UI
     let mut engine = QmlEngine::new();
     engine.set_object_property("app".into(), controller_ptr);

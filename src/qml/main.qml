@@ -1040,6 +1040,7 @@ Window {
                     highlightFollowsCurrentItem: false
                     highlight: null
                     currentIndex: -1
+                    onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
 
                     delegate: Item {
                         width: ListView.view.width
@@ -1258,6 +1259,7 @@ Window {
                     highlightFollowsCurrentItem: false
                     highlight: null
                     currentIndex: -1
+                    onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
 
                     ScrollBar.vertical: ScrollBar {
                         policy: ScrollBar.AsNeeded
@@ -1566,6 +1568,7 @@ Window {
                             highlightFollowsCurrentItem: false
                             highlight: null
                             currentIndex: -1
+                            onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
 
                             ScrollBar.vertical: ScrollBar {
                                 policy: ScrollBar.AsNeeded
@@ -1813,6 +1816,7 @@ Window {
                         highlightFollowsCurrentItem: false
                         highlight: null
                         currentIndex: -1
+                        onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
 
                         ScrollBar.vertical: ScrollBar {
                             policy: ScrollBar.AsNeeded
@@ -2576,6 +2580,7 @@ Window {
                         highlightFollowsCurrentItem: false
                         highlight: null
                         currentIndex: -1
+                        onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
                         focus: false
 
                         ScrollBar.vertical: ScrollBar {
@@ -2783,6 +2788,9 @@ Window {
                     highlightFollowsCurrentItem: false
                     highlight: null
                     currentIndex: -1
+                    // Force-reset currentIndex whenever Qt changes it (e.g. on click/drag)
+                    // to prevent the system-theme highlight overlay from appearing.
+                    onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
 
                     property bool hasMoreHistory: true
                     property bool isLoadingMore: false
@@ -4412,6 +4420,7 @@ Window {
                     highlightFollowsCurrentItem: false
                     highlight: null
                     currentIndex: -1
+                    onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
                     boundsBehavior: Flickable.StopAtBounds
 
                     ScrollBar.vertical: ScrollBar {
@@ -8832,6 +8841,7 @@ Window {
                 highlightFollowsCurrentItem: false
                 highlight: null
                 currentIndex: -1
+                onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
 
                 delegate: Rectangle {
                     width: switcherList.width
@@ -8989,6 +8999,7 @@ Window {
                 highlightFollowsCurrentItem: false
                 highlight: null
                 currentIndex: -1
+                onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
 
                 delegate: Item {
                     width: pinsList.width
@@ -9139,6 +9150,7 @@ Window {
                 highlightFollowsCurrentItem: false
                 highlight: null
                 currentIndex: -1
+                onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
                 delegate: Rectangle {
                     width: accountSwitcherList.width - 16
                     height: 40
