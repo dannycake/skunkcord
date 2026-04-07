@@ -33,7 +33,7 @@ Rectangle {
         radius: parent.radius + 3
         color: "transparent"
         border.width: guildIconMa.containsMouse && !isActive ? 2 : 0
-        border.color: typeof theme !== "undefined" ? theme.accentGlow : "#5865f230"
+        border.color: typeof theme !== "undefined" ? theme.accentGlow : "#305865f2"
         Behavior on border.width { NumberAnimation { duration: 100 } }
     }
 

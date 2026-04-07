@@ -29,7 +29,7 @@ pub mod colors {
     /// Selected / active state
     pub const BG_ACTIVE: &str = "#3e3450";
     /// Subtle white overlay for hover modifiers
-    pub const BG_MODIFIER: &str = "#ffffff08";
+    pub const BG_MODIFIER: &str = "#08ffffff";
 
     // ── Text hierarchy ──
 
@@ -53,9 +53,9 @@ pub mod colors {
     /// Lighter accent for secondary emphasis
     pub const ACCENT_LIGHT: &str = "#7289da";
     /// Accent glow — used for focus rings and hover glows
-    pub const ACCENT_GLOW: &str = "#5865f230";
+    pub const ACCENT_GLOW: &str = "#305865f2";
     /// Muted accent — subtle accent background tint
-    pub const ACCENT_MUTED: &str = "#5865f218";
+    pub const ACCENT_MUTED: &str = "#185865f2";
 
     // ── Semantic colors ──
 
@@ -84,18 +84,18 @@ pub mod colors {
     /// Primary border color
     pub const BORDER: &str = "#3a3048";
     /// Subtle border (semi-transparent white)
-    pub const BORDER_SUBTLE: &str = "#ffffff0a";
+    pub const BORDER_SUBTLE: &str = "#0affffff";
     /// Separator lines
     pub const SEPARATOR: &str = "#3a3048";
 
     // ── Misc ──
 
     /// Mention highlight background
-    pub const MENTION_BG: &str = "#5865f218";
+    pub const MENTION_BG: &str = "#185865f2";
     /// Mention text color
     pub const MENTION_FG: &str = "#c9cdfb";
     /// Deleted message background (for message logger)
-    pub const DELETED_BG: &str = "#f23f4312";
+    pub const DELETED_BG: &str = "#12f23f43";
     /// Edited message indicator
     pub const EDITED_FG: &str = "#6d7178";
 

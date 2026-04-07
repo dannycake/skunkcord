@@ -7,7 +7,7 @@ import QtQuick 2.15
 Rectangle {
     id: root
     property bool vertical: false
-    property color separatorColor: "#ffffff0a"
+    property color separatorColor: "#0affffff"
     property int thickness: 1
 
     width: vertical ? thickness : parent ? parent.width : 0

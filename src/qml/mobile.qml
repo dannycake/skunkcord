@@ -48,7 +48,7 @@ Window {
         readonly property color bgActive:     "#3e3450"
         readonly property color bgElevated:   "#211a30"
         readonly property color bgFloating:   "#110e1a"
-        readonly property color bgModifier:   "#ffffff08"
+        readonly property color bgModifier:   "#08ffffff"
         readonly property color textNormal:    "#dbdee1"
         readonly property color textSecondary: "#b5bac1"
         readonly property color textMuted:     "#80848e"
@@ -56,14 +56,14 @@ Window {
         readonly property color accent:       "#5865f2"
         readonly property color accentHover:  "#4752c4"
         readonly property color accentLight:  "#7289da"
-        readonly property color accentGlow:   "#5865f230"
-        readonly property color accentMuted:  "#5865f218"
+        readonly property color accentGlow:   "#305865f2"
+        readonly property color accentMuted:  "#185865f2"
         readonly property color positive:  "#23a55a"
         readonly property color warning:   "#f0b132"
         readonly property color danger:    "#f23f43"
         readonly property color info:      "#5e9eff"
         readonly property color border:        "#3a3048"
-        readonly property color borderSubtle:  "#ffffff0a"
+        readonly property color borderSubtle:  "#0affffff"
         readonly property color separator:     "#3a3048"
         readonly property color inputBg:       "#302840"
         readonly property color channelIcon:  "#80848e"
@@ -72,13 +72,13 @@ Window {
         readonly property color idle:    "#f0b132"
         readonly property color dnd:     "#f23f43"
         readonly property color offline: "#80848e"
-        readonly property color mentionBg:    "#5865f210"
+        readonly property color mentionBg:    "#105865f2"
         readonly property color mentionText:  "#c9cdfb"
         readonly property color mentionPillBg: "#5865f2"   // Discord blurple for @mention count badges
         readonly property color voicePositive:   "#23a55a"
         readonly property color voiceConnecting: "#f0b132"
         readonly property color voiceSpeaking:   "#23a55a"
-        readonly property color voiceSpeakingGlow: "#23a55a40"
+        readonly property color voiceSpeakingGlow: "#4023a55a"
         readonly property color statsBg:     "#0c0912"
         readonly property color statsFg:     "#40c463"
         readonly property color statsLabel:  "#6d7178"
@@ -712,7 +712,7 @@ Window {
                     Rectangle {
                         visible: loginError.length > 0; Layout.fillWidth: true
                         Layout.preferredHeight: loginErrText.implicitHeight + 20; radius: theme.radiusMed
-                        color: "#f23f4318"; border.width: 1; border.color: "#f23f4330"; Layout.bottomMargin: 8
+                        color: "#18f23f43"; border.width: 1; border.color: "#30f23f43"; Layout.bottomMargin: 8
                         Text { id: loginErrText; anchors.centerIn: parent; width: parent.width - 24; text: loginError; color: theme.danger; font.family: fontFamily; font.pixelSize: 12; wrapMode: Text.WordWrap; horizontalAlignment: Text.AlignHCenter }
                     }
 
@@ -1160,7 +1160,7 @@ Window {
                             + (hasReplyPreview && !condensed ? 22 : 0)
                             + (isSystemMsg ? 32 : condensed ? (compactText.implicitHeight || 14) + 4 : (msgCol.implicitHeight || 20) + 12)
                             + (hasReactions ? 28 : 0)
-                        color: isMentioned ? "#5865f212" : "transparent"
+                        color: isMentioned ? "#125865f2" : "transparent"
 
                         Rectangle { visible: isMentioned; anchors.left: parent.left; anchors.top: parent.top; anchors.bottom: parent.bottom; width: 3; color: theme.accent; radius: 1 }
 

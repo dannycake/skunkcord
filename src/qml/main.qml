@@ -61,7 +61,7 @@ Window {
         readonly property color bgActive:     "#3e3450"
         readonly property color bgElevated:   "#211a30"
         readonly property color bgFloating:   "#110e1a"
-        readonly property color bgModifier:   "#ffffff08"
+        readonly property color bgModifier:   "#08ffffff"
 
         // Text — Discord hierarchy
         readonly property color textNormal:    "#dbdee1"
@@ -73,8 +73,8 @@ Window {
         readonly property color accent:       "#5865f2"
         readonly property color accentHover:  "#4752c4"
         readonly property color accentLight:  "#7289da"
-        readonly property color accentGlow:   "#5865f230"
-        readonly property color accentMuted:  "#5865f218"
+        readonly property color accentGlow:   "#305865f2"
+        readonly property color accentMuted:  "#185865f2"
 
         // Semantic
         readonly property color positive:  "#23a55a"
@@ -84,7 +84,7 @@ Window {
 
         // Borders
         readonly property color border:        "#3a3048"
-        readonly property color borderSubtle:  "#ffffff0a"
+        readonly property color borderSubtle:  "#0affffff"
         readonly property color separator:     "#3a3048"
 
         // Input and icons
@@ -99,7 +99,7 @@ Window {
         readonly property color offline: "#80848e"
 
         // Misc
-        readonly property color mentionBg:    "#5865f210"
+        readonly property color mentionBg:    "#105865f2"
         readonly property color mentionText:  "#c9cdfb"
         readonly property color mentionPillBg: "#5865f2"   // Discord blurple for @mention count badges
 
@@ -107,7 +107,7 @@ Window {
         readonly property color voicePositive:   "#23a55a"
         readonly property color voiceConnecting: "#f0b132"
         readonly property color voiceSpeaking:   "#23a55a"
-        readonly property color voiceSpeakingGlow: "#23a55a40"
+        readonly property color voiceSpeakingGlow: "#4023a55a"
 
         // Stats panel
         readonly property color statsBg:     "#0c0912"
@@ -1238,7 +1238,7 @@ Window {
                             width: parent.width
                             height: 4
                             gradient: Gradient {
-                                GradientStop { position: 0.0; color: "#00000030" }
+                                GradientStop { position: 0.0; color: "#30000000" }
                                 GradientStop { position: 1.0; color: "transparent" }
                             }
                         }
@@ -2184,7 +2184,7 @@ Window {
                     Layout.fillWidth: true
                     Layout.preferredHeight: loginError.length > 0 ? 40 : 0
                     visible: loginError.length > 0
-                    color: "#f23f4320"
+                    color: "#20f23f43"
                     border.width: 1
                     border.color: theme.danger
                     radius: theme.radiusSmall
@@ -2361,7 +2361,7 @@ Window {
                             width: parent.width
                             height: 6
                             gradient: Gradient {
-                                GradientStop { position: 0.0; color: "#00000025" }
+                                GradientStop { position: 0.0; color: "#25000000" }
                                 GradientStop { position: 1.0; color: "transparent" }
                             }
                         }
@@ -3069,7 +3069,7 @@ Window {
                                     : (msgRow.implicitHeight || 0) + 16)
                                 + (hasReactions ? 30 : 0)
                         color: isMentioned
-                               ? "#5865f212"
+                               ? "#125865f2"
                                : msgHoverMa.containsMouse ? theme.bgModifier : "transparent"
                         Behavior on color { ColorAnimation { duration: theme.animFast } }
 
@@ -3389,7 +3389,7 @@ Window {
                                         visible: (model.isDeleted || false) && (root.deletedMessageStyle === "deleted")
                                         width: delLabel.width + 10
                                         height: 16; radius: 8
-                                        color: "#f23f4318"
+                                        color: "#18f23f43"
 
                                         Text {
                                             id: delLabel
@@ -4208,9 +4208,9 @@ Window {
                             Layout.fillWidth: true
                             Layout.preferredHeight: loginErrorText.implicitHeight + 20
                             radius: theme.radiusMed
-                            color: "#f23f4318"
+                            color: "#18f23f43"
                             border.width: 1
-                            border.color: "#f23f4330"
+                            border.color: "#30f23f43"
                             Layout.bottomMargin: 8
 
                             Text {
@@ -4556,7 +4556,7 @@ Window {
         }
 
         Overlay.modal: Rectangle {
-            color: "#000000aa"
+            color: "#aa000000"
         }
 
         contentItem: ColumnLayout {
@@ -4659,9 +4659,9 @@ Window {
                     Layout.fillWidth: true
                     Layout.preferredHeight: joinErrorText.implicitHeight + 16
                     radius: theme.radiusMed
-                    color: "#f23f4318"
+                    color: "#18f23f43"
                     border.width: 1
-                    border.color: "#f23f4340"
+                    border.color: "#40f23f43"
 
                     Text {
                         id: joinErrorText
@@ -4808,7 +4808,7 @@ Window {
         }
 
         Overlay.modal: Rectangle {
-            color: "#000000dd"
+            color: "#dd000000"
         }
 
         contentItem: ColumnLayout {
@@ -5252,7 +5252,7 @@ Window {
             border.width: 1
         }
 
-        Overlay.modal: Rectangle { color: "#000000cc" }
+        Overlay.modal: Rectangle { color: "#cc000000" }
 
         contentItem: Flickable {
             id: profileFlick
@@ -6317,7 +6317,7 @@ Window {
         }
 
         Overlay.modal: Rectangle {
-            color: "#000000cc"
+            color: "#cc000000"
         }
 
         contentItem: ColumnLayout {
@@ -6559,7 +6559,7 @@ Window {
                     width: logoutLabel.implicitWidth + 24
                     height: 34
                     radius: theme.radiusMed
-                    color: logoutMa.containsMouse ? "#f23f4320" : "transparent"
+                    color: logoutMa.containsMouse ? "#20f23f43" : "transparent"
                     border.color: theme.danger
                     border.width: 1
                     Behavior on color { ColorAnimation { duration: theme.animFast } }
@@ -7848,7 +7848,7 @@ Window {
             border.width: 1
         }
 
-        Overlay.modal: Rectangle { color: "#000000aa" }
+        Overlay.modal: Rectangle { color: "#aa000000" }
 
         ColumnLayout {
             anchors.fill: parent
@@ -8453,7 +8453,7 @@ Window {
         }
 
         Overlay.modal: Rectangle {
-            color: "#000000cc"
+            color: "#cc000000"
         }
 
         ColumnLayout {
@@ -8692,7 +8692,7 @@ Window {
 
                         Rectangle {
                             anchors.fill: parent
-                            color: gifItemMa.containsMouse ? "#00000040" : "transparent"
+                            color: gifItemMa.containsMouse ? "#40000000" : "transparent"
                         }
                     }
 

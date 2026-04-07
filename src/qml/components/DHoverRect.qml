@@ -8,7 +8,7 @@ Rectangle {
     id: root
     property bool hoverEnabled: true
     property int cursorShape: Qt.PointingHandCursor
-    property color hoverColor: "#ffffff0d"
+    property color hoverColor: "#0dffffff"
     property color normalColor: "transparent"
     property color activeColor: "transparent"
     property bool isActive: false

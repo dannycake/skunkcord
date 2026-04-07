@@ -57,7 +57,7 @@ Window {
         readonly property color bgActive:     "#3e3450"
         readonly property color bgElevated:   "#211a30"
         readonly property color bgFloating:   "#110e1a"
-        readonly property color bgModifier:   "#ffffff08"
+        readonly property color bgModifier:   "#08ffffff"
 
         readonly property color textNormal:    "#dbdee1"
         readonly property color textSecondary: "#b5bac1"
@@ -67,8 +67,8 @@ Window {
         readonly property color accent:       "#5865f2"
         readonly property color accentHover:  "#4752c4"
         readonly property color accentLight:  "#7289da"
-        readonly property color accentGlow:   "#5865f230"
-        readonly property color accentMuted:  "#5865f218"
+        readonly property color accentGlow:   "#305865f2"
+        readonly property color accentMuted:  "#185865f2"
 
         readonly property color positive:  "#23a55a"
         readonly property color warning:   "#f0b132"
@@ -76,7 +76,7 @@ Window {
         readonly property color info:      "#5e9eff"
 
         readonly property color border:        "#3a3048"
-        readonly property color borderSubtle:  "#ffffff0a"
+        readonly property color borderSubtle:  "#0affffff"
         readonly property color separator:     "#3a3048"
 
         readonly property color inputBg:       "#302840"
@@ -402,7 +402,7 @@ Window {
                 }
             }
 
-            Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: "#00000040" }
+            Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: "#40000000" }
 
             // ══════════ Channel Sidebar ══════════
             Rectangle {
@@ -442,7 +442,7 @@ Window {
                                 width: parent.width
                                 height: 4
                                 gradient: Gradient {
-                                    GradientStop { position: 0.0; color: "#00000030" }
+                                    GradientStop { position: 0.0; color: "#30000000" }
                                     GradientStop { position: 1.0; color: "transparent" }
                                 }
                             }
@@ -627,7 +627,7 @@ Window {
                 }
             }
 
-            Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: "#00000040" }
+            Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: "#40000000" }
 
             // ══════════ Main Content ══════════
             Rectangle {
@@ -710,7 +710,7 @@ Window {
                                 width: parent.width
                                 height: 6
                                 gradient: Gradient {
-                                    GradientStop { position: 0.0; color: "#00000025" }
+                                    GradientStop { position: 0.0; color: "#25000000" }
                                     GradientStop { position: 1.0; color: "transparent" }
                                 }
                             }
@@ -871,7 +871,7 @@ Window {
                                             visible: (model.isDeleted || false) && (root.deletedMessageStyle === "deleted")
                                             width: delLabel.width + 10
                                             height: 16; radius: 8
-                                            color: "#f23f4318"
+                                            color: "#18f23f43"
 
                                             Text {
                                                 id: delLabel
