@@ -60,9 +60,11 @@ fn main() -> Result<()> {
     // Action channel: QML thread -> async worker (tokio unbounded — non-async send)
     let (action_tx, action_rx) = tokio::sync::mpsc::unbounded_channel::<UiAction>();
 
-    // Initial login request: only from CLI or env so the worker doesn't block on a saved-session
-    // token while the user tries to log in with credentials (which would never be read).
-    let initial_request = get_initial_login_request().map(LoginRequest::Token);
+    // Initial login request: from CLI, env, or saved session
+    let initial_request = get_token_no_prompt(&settings, &storage)
+        .ok()
+        .flatten()
+        .map(LoginRequest::Token);
 
     // Shared receiver so credential login can wait for CaptchaSolution/MfaCode from the same channel
     let login_rx = Arc::new(Mutex::new(login_rx));

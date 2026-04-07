@@ -16,8 +16,22 @@ Window {
     height: 844
     title: isLoggedIn ? (currentGuildName || "Skunkcord") : "Login"
     color: theme.bgBase
-    palette.highlight: theme.accent
-    palette.highlightedText: "#ffffff"
+    palette {
+        active {
+            highlight: "#5865f2"
+            highlightedText: "#ffffff"
+            base: "#2a2139"
+            window: "#2a2139"
+            text: "#dbdee1"
+        }
+        inactive {
+            highlight: "#5865f2"
+            highlightedText: "#ffffff"
+            base: "#2a2139"
+            window: "#2a2139"
+            text: "#dbdee1"
+        }
+    }
 
     // ─── Fonts ───
     FontLoader { id: jbMono; source: "https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/ttf/JetBrainsMono-Regular.ttf" }
