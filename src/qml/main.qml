@@ -1038,7 +1038,7 @@ Window {
                     clip: true
                     spacing: 2
                     highlightFollowsCurrentItem: false
-                    highlight: null
+                    highlight: Item { visible: false; width: 0; height: 0 }
                     currentIndex: -1
                     onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
 
@@ -1257,7 +1257,7 @@ Window {
                     boundsBehavior: Flickable.StopAtBounds
                     visible: currentGuildId !== ""
                     highlightFollowsCurrentItem: false
-                    highlight: null
+                    highlight: Item { visible: false; width: 0; height: 0 }
                     currentIndex: -1
                     onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
 
@@ -1566,7 +1566,7 @@ Window {
                             spacing: 1
                             boundsBehavior: Flickable.StopAtBounds
                             highlightFollowsCurrentItem: false
-                            highlight: null
+                            highlight: Item { visible: false; width: 0; height: 0 }
                             currentIndex: -1
                             onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
 
@@ -1814,7 +1814,7 @@ Window {
                         spacing: 1
                         boundsBehavior: Flickable.StopAtBounds
                         highlightFollowsCurrentItem: false
-                        highlight: null
+                        highlight: Item { visible: false; width: 0; height: 0 }
                         currentIndex: -1
                         onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
 
@@ -2578,7 +2578,7 @@ Window {
                         spacing: 2
                         boundsBehavior: Flickable.StopAtBounds
                         highlightFollowsCurrentItem: false
-                        highlight: null
+                        highlight: Item { visible: false; width: 0; height: 0 }
                         currentIndex: -1
                         onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
                         focus: false
@@ -2786,8 +2786,15 @@ Window {
                     spacing: 0
                     boundsBehavior: Flickable.StopAtBounds
                     highlightFollowsCurrentItem: false
-                    highlight: null
+                    // Explicit zero-size transparent Item prevents Qt from creating
+                    // a default QQuickItem highlight (which platform themes can style).
+                    // Using null here causes Qt C++ to create a default highlight item
+                    // via createComponentItem(nullptr, 0.0, /*createDefault=*/true).
+                    highlight: Item { visible: false; width: 0; height: 0 }
+                    highlightMoveDuration: 0
+                    highlightMoveVelocity: -1
                     currentIndex: -1
+                    keyNavigationEnabled: false
                     // Force-reset currentIndex whenever Qt changes it (e.g. on click/drag)
                     // to prevent the system-theme highlight overlay from appearing.
                     onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
@@ -4418,7 +4425,7 @@ Window {
                     focus: false
                     spacing: 2
                     highlightFollowsCurrentItem: false
-                    highlight: null
+                    highlight: Item { visible: false; width: 0; height: 0 }
                     currentIndex: -1
                     onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
                     boundsBehavior: Flickable.StopAtBounds
@@ -8839,7 +8846,7 @@ Window {
                 spacing: 2
                 boundsBehavior: Flickable.StopAtBounds
                 highlightFollowsCurrentItem: false
-                highlight: null
+                highlight: Item { visible: false; width: 0; height: 0 }
                 currentIndex: -1
                 onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
 
@@ -8997,7 +9004,7 @@ Window {
                 spacing: 4
                 boundsBehavior: Flickable.StopAtBounds
                 highlightFollowsCurrentItem: false
-                highlight: null
+                highlight: Item { visible: false; width: 0; height: 0 }
                 currentIndex: -1
                 onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
 
@@ -9148,7 +9155,7 @@ Window {
                 clip: true
                 model: accountsList
                 highlightFollowsCurrentItem: false
-                highlight: null
+                highlight: Item { visible: false; width: 0; height: 0 }
                 currentIndex: -1
                 onCurrentIndexChanged: if (currentIndex !== -1) currentIndex = -1
                 delegate: Rectangle {

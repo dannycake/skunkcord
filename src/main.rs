@@ -137,6 +137,12 @@ fn main() -> Result<()> {
     // platform themes from overriding palette colors (e.g. yellow selection highlight).
     // Must be set BEFORE QmlEngine::new() creates the QApplication.
     std::env::set_var("QT_QUICK_CONTROLS_STYLE", "Basic");
+    // Disable the KDE/GNOME platform theme plugin entirely so it cannot inject
+    // palette overrides, selection highlight colors, or style delegates at the
+    // C++ QApplication level. Without this, the platform integration plugin
+    // (e.g. KdePlatformTheme) can paint overlays that QML-level palette and
+    // highlight settings cannot override.
+    std::env::set_var("QT_QPA_PLATFORMTHEME", "");
 
     // Load and run Qt UI
     let mut engine = QmlEngine::new();
