@@ -21,15 +21,15 @@ Window {
         active {
             highlight: "#5865f2"
             highlightedText: "#ffffff"
-            base: "#2a2139"
-            window: "#2a2139"
+            base: "#000000"
+            window: "#000000"
             text: "#dbdee1"
         }
         inactive {
             highlight: "#5865f2"
             highlightedText: "#ffffff"
-            base: "#2a2139"
-            window: "#2a2139"
+            base: "#000000"
+            window: "#000000"
             text: "#dbdee1"
         }
     }
@@ -49,14 +49,14 @@ Window {
     QtObject {
         id: theme
 
-        readonly property color bgBase:       "#2a2139"
-        readonly property color bgPrimary:    "#2a2139"
-        readonly property color bgSecondary:  "#211a30"
-        readonly property color bgTertiary:   "#191425"
-        readonly property color bgHover:      "#342b44"
-        readonly property color bgActive:     "#3e3450"
-        readonly property color bgElevated:   "#211a30"
-        readonly property color bgFloating:   "#110e1a"
+        readonly property color bgBase:       "#000000"
+        readonly property color bgPrimary:    "#000000"
+        readonly property color bgSecondary:  "#0a0a0a"
+        readonly property color bgTertiary:   "#050505"
+        readonly property color bgHover:      "#1a1a1a"
+        readonly property color bgActive:     "#222222"
+        readonly property color bgElevated:   "#0a0a0a"
+        readonly property color bgFloating:   "#000000"
         readonly property color bgModifier:   "#08ffffff"
 
         readonly property color textNormal:    "#dbdee1"
@@ -75,11 +75,11 @@ Window {
         readonly property color danger:    "#f23f43"
         readonly property color info:      "#5e9eff"
 
-        readonly property color border:        "#3a3048"
+        readonly property color border:        "#1a1a1a"
         readonly property color borderSubtle:  "#0affffff"
-        readonly property color separator:     "#3a3048"
+        readonly property color separator:     "#1a1a1a"
 
-        readonly property color inputBg:       "#302840"
+        readonly property color inputBg:       "#111111"
         readonly property color channelIcon:  "#80848e"
         readonly property color headerPrimary: "#f2f3f5"
 

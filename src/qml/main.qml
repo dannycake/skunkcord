@@ -24,21 +24,21 @@ Window {
         active {
             highlight: "#5865f2"
             highlightedText: "#ffffff"
-            base: "#2a2139"
-            window: "#2a2139"
+            base: "#000000"
+            window: "#000000"
             text: "#dbdee1"
             windowText: "#dbdee1"
-            button: "#342b44"
+            button: "#1a1a1a"
             buttonText: "#dbdee1"
         }
         inactive {
             highlight: "#5865f2"
             highlightedText: "#ffffff"
-            base: "#2a2139"
-            window: "#2a2139"
+            base: "#000000"
+            window: "#000000"
             text: "#dbdee1"
             windowText: "#dbdee1"
-            button: "#342b44"
+            button: "#1a1a1a"
             buttonText: "#dbdee1"
         }
     }
@@ -52,15 +52,15 @@ Window {
     QtObject {
         id: theme
 
-        // Backgrounds — Muted Violet theme
-        readonly property color bgBase:       "#2a2139"
-        readonly property color bgPrimary:    "#2a2139"
-        readonly property color bgSecondary:  "#211a30"
-        readonly property color bgTertiary:   "#191425"
-        readonly property color bgHover:      "#342b44"
-        readonly property color bgActive:     "#3e3450"
-        readonly property color bgElevated:   "#211a30"
-        readonly property color bgFloating:   "#110e1a"
+        // Backgrounds — OLED black theme
+        readonly property color bgBase:       "#000000"
+        readonly property color bgPrimary:    "#000000"
+        readonly property color bgSecondary:  "#0a0a0a"
+        readonly property color bgTertiary:   "#050505"
+        readonly property color bgHover:      "#1a1a1a"
+        readonly property color bgActive:     "#222222"
+        readonly property color bgElevated:   "#0a0a0a"
+        readonly property color bgFloating:   "#000000"
         readonly property color bgModifier:   "#08ffffff"
 
         // Text — Discord hierarchy
@@ -83,12 +83,12 @@ Window {
         readonly property color info:      "#5e9eff"
 
         // Borders
-        readonly property color border:        "#3a3048"
+        readonly property color border:        "#1a1a1a"
         readonly property color borderSubtle:  "#0affffff"
-        readonly property color separator:     "#3a3048"
+        readonly property color separator:     "#1a1a1a"
 
         // Input and icons
-        readonly property color inputBg:       "#302840"
+        readonly property color inputBg:       "#111111"
         readonly property color channelIcon:  "#80848e"
         readonly property color headerPrimary: "#f2f3f5"
 
@@ -110,7 +110,7 @@ Window {
         readonly property color voiceSpeakingGlow: "#4023a55a"
 
         // Stats panel
-        readonly property color statsBg:     "#0c0912"
+        readonly property color statsBg:     "#000000"
         readonly property color statsFg:     "#40c463"
         readonly property color statsLabel:  "#6d7178"
         readonly property string monospace:  "JetBrains Mono, Fira Code, Consolas, monospace"

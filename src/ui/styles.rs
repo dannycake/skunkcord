@@ -4,30 +4,30 @@
 
 //! UI Styles and Theming
 //!
-//! Muted violet dark theme with JetBrains Mono font.
+//! OLED black theme with JetBrains Mono font.
 //! All colors here are kept in sync with the QML theme object in `src/qml/main.qml`.
 
-/// Muted violet color palette — dark purple-tinted backgrounds for visual depth,
+/// OLED black color palette — true black backgrounds for power efficiency,
 /// paired with Discord-inspired accent colors.
 pub mod colors {
     // ── Background layers ──
 
-    /// Base background — deep muted violet
-    pub const BG_BASE: &str = "#2a2139";
-    /// Primary background — dark panels
-    pub const BG_PRIMARY: &str = "#2a2139";
+    /// Base background — true OLED black
+    pub const BG_BASE: &str = "#000000";
+    /// Primary background — true black
+    pub const BG_PRIMARY: &str = "#000000";
     /// Secondary background — elevated surfaces, sidebars
-    pub const BG_SECONDARY: &str = "#211a30";
+    pub const BG_SECONDARY: &str = "#0a0a0a";
     /// Tertiary background — cards, nested surfaces
-    pub const BG_TERTIARY: &str = "#191425";
+    pub const BG_TERTIARY: &str = "#050505";
     /// Floating elements — popups, tooltips
-    pub const BG_FLOATING: &str = "#110e1a";
+    pub const BG_FLOATING: &str = "#000000";
     /// Elevated elements — contextual menus, action bars
-    pub const BG_ELEVATED: &str = "#211a30";
+    pub const BG_ELEVATED: &str = "#0a0a0a";
     /// Hover state
-    pub const BG_HOVER: &str = "#342b44";
+    pub const BG_HOVER: &str = "#1a1a1a";
     /// Selected / active state
-    pub const BG_ACTIVE: &str = "#3e3450";
+    pub const BG_ACTIVE: &str = "#222222";
     /// Subtle white overlay for hover modifiers
     pub const BG_MODIFIER: &str = "#08ffffff";
 
@@ -82,11 +82,11 @@ pub mod colors {
     // ── Borders & separators ──
 
     /// Primary border color
-    pub const BORDER: &str = "#3a3048";
+    pub const BORDER: &str = "#1a1a1a";
     /// Subtle border (semi-transparent white)
     pub const BORDER_SUBTLE: &str = "#0affffff";
     /// Separator lines
-    pub const SEPARATOR: &str = "#3a3048";
+    pub const SEPARATOR: &str = "#1a1a1a";
 
     // ── Misc ──
 
@@ -104,7 +104,7 @@ pub mod colors {
     /// Alias for BG_BASE
     pub const BG_PRIMARY_LEGACY: &str = BG_BASE;
     /// Input field background
-    pub const INPUT_BG: &str = "#302840";
+    pub const INPUT_BG: &str = "#111111";
 }
 
 /// Font configuration
