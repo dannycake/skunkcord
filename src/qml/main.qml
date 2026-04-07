@@ -3405,6 +3405,7 @@ Window {
 
                                 Text {
                                     Layout.fillWidth: true
+                                    visible: text.length > 0
                                     textFormat: (model.contentHtml && model.contentHtml.length > 0) ? Text.RichText : Text.PlainText
                                     text: (model.contentHtml && model.contentHtml.length > 0) ? model.contentHtml : (model.content || "")
                                     color: (model.isDeleted && (root.deletedMessageStyle === "strikethrough" || root.deletedMessageStyle === "deleted")) ? theme.danger : theme.textNormal
