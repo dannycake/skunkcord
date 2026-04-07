@@ -32,6 +32,10 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 fn main() -> Result<()> {
+    // Must be set before ANY Qt code runs — platform theme plugins load at static init
+    std::env::set_var("QT_QPA_PLATFORMTHEME", "");
+    std::env::set_var("QT_QUICK_CONTROLS_STYLE", "Basic");
+
     // Initialize logging
     tracing_subscriber::fmt()
         .with_env_filter(
@@ -132,17 +136,6 @@ fn main() -> Result<()> {
     // Create AppController and pass to QML
     let app_controller = std::cell::RefCell::new(AppController::new(login_tx, action_tx, update_rx));
     let controller_ptr = unsafe { QObjectPinned::new(&app_controller) };
-
-    // Force Basic style for Qt Quick Controls to prevent KDE/Breeze/Adwaita
-    // platform themes from overriding palette colors (e.g. yellow selection highlight).
-    // Must be set BEFORE QmlEngine::new() creates the QApplication.
-    std::env::set_var("QT_QUICK_CONTROLS_STYLE", "Basic");
-    // Disable the KDE/GNOME platform theme plugin entirely so it cannot inject
-    // palette overrides, selection highlight colors, or style delegates at the
-    // C++ QApplication level. Without this, the platform integration plugin
-    // (e.g. KdePlatformTheme) can paint overlays that QML-level palette and
-    // highlight settings cannot override.
-    std::env::set_var("QT_QPA_PLATFORMTHEME", "");
 
     // Load and run Qt UI
     let mut engine = QmlEngine::new();
