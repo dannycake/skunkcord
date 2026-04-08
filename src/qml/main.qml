@@ -7625,7 +7625,7 @@ Window {
                 Layout.minimumHeight: 200
                 onTitleChanged: {
                     if (title.indexOf("CAPTCHA_SOLVED:") === 0) {
-                        var token = title.substring(14)
+                        var token = title.substring(15)
                         if (app) app.submit_captcha(token)
                         captchaPopup.close()
                     }
