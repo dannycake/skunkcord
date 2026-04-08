@@ -103,12 +103,6 @@ Window {
         readonly property color mentionText:  "#c9cdfb"
         readonly property color mentionPillBg: "#5865f2"   // Discord blurple for @mention count badges
 
-        // Voice
-        readonly property color voicePositive:   "#23a55a"
-        readonly property color voiceConnecting: "#f0b132"
-        readonly property color voiceSpeaking:   "#23a55a"
-        readonly property color voiceSpeakingGlow: "#4023a55a"
-
         // Stats panel
         readonly property color statsBg:     "#000000"
         readonly property color statsFg:     "#40c463"
@@ -163,7 +157,6 @@ Window {
             return JSON.parse(s)
         } catch (e) { return [] }
     })()
-    property string voiceConnectionState: app ? app.voice_connection_state : ""
 
     // Reply state
     property string replyToMessageId: ""
@@ -178,8 +171,6 @@ Window {
     property string currentChannelId: ""
     property string currentChannelName: ""
     property int currentChannelType: 0
-    // Voice/stage channels (types 2, 13) get a different view instead of messages
-    readonly property bool isVoiceChannel: currentChannelType === 2 || currentChannelType === 13
 
     // Home sub-view when currentGuildId === "": "friends" or "dms"
     property string homeSubView: "dms"
@@ -196,8 +187,6 @@ Window {
     // Track whether we've done the initial DM REST refresh after connect
     property bool _didInitialDmRefresh: false
 
-    // Feature flags state
-    property bool showProxyDialogOnStartup: true
     // UI Tweaks
     property bool showTypingInChannelList: true
 
@@ -216,16 +205,8 @@ Window {
 
     Component.onCompleted: {
         if (app) deletedMessageStyle = app.get_deleted_message_style()
-        if (showProxyDialogOnStartup && !isLoggedIn) {
-            proxyConfigPopup.open()
-            showProxyDialogOnStartup = false
-        }
     }
     onIsLoggedInChanged: {
-        if (!isLoggedIn && !proxyConfigPopup.opened) {
-            showProxyDialogOnStartup = true
-            proxyConfigPopup.open()
-        }
     }
 
     // ── In-memory caches ──
@@ -684,75 +665,6 @@ Window {
                 }
             }
 
-            // Consume voice state changes
-            var vsj = app.consume_voice_state()
-            if (vsj.length > 0) {
-                if (vsj.indexOf("joined:") === 0) {
-                    isVoiceConnected = true
-                } else if (vsj === "disconnected") {
-                    isVoiceConnected = false
-                    voiceChannelName = ""
-                    voiceChannelId = ""
-                    voiceGuildId = ""
-                    voiceParticipantModel.clear()
-                } else if (vsj.indexOf("mute:") === 0) {
-                    isMuted = (vsj === "mute:true")
-                } else if (vsj.indexOf("deafen:") === 0) {
-                    var deaf = (vsj === "deafen:true")
-                    isDeafened = deaf
-                    if (deaf) isMuted = true
-                } else if (vsj.indexOf("fake_deafen:") === 0) {
-                    isFakeDeafened = (vsj === "fake_deafen:true")
-                }
-            }
-
-            // Consume voice participants (only when viewing a voice channel)
-            var vpj = app.consume_voice_participants()
-            if (vpj.length > 2 && isVoiceChannel && currentChannelId !== "") {
-                try {
-                    var vpData = JSON.parse(vpj)
-                    if (vpData.channelId === currentChannelId && vpData.participants) {
-                        voiceParticipantModel.clear()
-                        for (var vpi = 0; vpi < vpData.participants.length; vpi++) {
-                            voiceParticipantModel.append(vpData.participants[vpi])
-                        }
-                    }
-                } catch(e) { console.log("Voice participants parse error:", e) }
-            }
-
-            // Consume speaking changes — update participant cards
-            var suj = app.consume_speaking_users()
-            if (suj.length > 2) {
-                try {
-                    var suArr = JSON.parse(suj)
-                    for (var sui = 0; sui < suArr.length; sui++) {
-                        var uid = suArr[sui].userId
-                        var sp = !!suArr[sui].speaking
-                        for (var spi = 0; spi < voiceParticipantModel.count; spi++) {
-                            if (voiceParticipantModel.get(spi).userId === uid) {
-                                voiceParticipantModel.setProperty(spi, "speaking", sp)
-                                break
-                            }
-                        }
-                    }
-                } catch(e) { console.log("Speaking parse error:", e) }
-            }
-
-            // Consume voice stats
-            var vstj = app.consume_voice_stats()
-            if (vstj.length > 2) {
-                try {
-                    var vst = JSON.parse(vstj)
-                    voiceStatsPing = String(vst.pingMs != null ? vst.pingMs : "—")
-                    voiceStatsEncryption = vst.encryptionMode || "—"
-                    voiceStatsEndpoint = vst.endpoint || "—"
-                    voiceStatsSsrc = vst.ssrc != null ? String(vst.ssrc) : "—"
-                    voiceStatsPacketsSent = vst.packetsSent != null ? String(vst.packetsSent) : "0"
-                    voiceStatsPacketsReceived = vst.packetsReceived != null ? String(vst.packetsReceived) : "0"
-                    voiceStatsDuration = vst.connectionDurationSecs != null ? String(vst.connectionDurationSecs) : "0"
-                } catch(e) { console.log("Voice stats parse error:", e) }
-            }
-
             // Consume GIF results
             var gifj = app.consume_gifs()
             if (gifj.length > 2) {
@@ -941,15 +853,6 @@ Window {
     ListModel { id: memberModel }
     ListModel { id: relationshipModel }
     ListModel { id: pinsModel }
-    ListModel { id: voiceParticipantModel }
-
-    property string voiceStatsPing: "—"
-    property string voiceStatsEncryption: "—"
-    property string voiceStatsEndpoint: "—"
-    property string voiceStatsSsrc: "—"
-    property string voiceStatsPacketsSent: "0"
-    property string voiceStatsPacketsReceived: "0"
-    property string voiceStatsDuration: "0"
 
     // ─── Main Layout ───
     RowLayout {
@@ -1276,9 +1179,8 @@ Window {
                     delegate: Item {
                         width: channelListView.width - 16
                         x: 8
-                        height: model.channelType === 4 ? 28 : (34 + (showVoiceParticipantsHere ? (voiceParticipantModel.count * 18 + 8) : 0))
+                        height: model.channelType === 4 ? 28 : 34
 
-                        property bool showVoiceParticipantsHere: (model.channelType === 2 || model.channelType === 13) && model.channelId === voiceChannelId && voiceParticipantModel.count > 0
                         property bool isCategory: model.channelType === 4
                         property bool isHiddenChannel: model.isHidden || false
                         property bool hasParent: (model.parentId && model.parentId !== "")
@@ -1408,41 +1310,6 @@ Window {
                                 }
                             }
 
-                            Column {
-                                anchors.top: parent.top
-                                anchors.topMargin: 34
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.leftMargin: hasParent ? 44 : 28
-                                anchors.rightMargin: 8
-                                anchors.bottomMargin: 6
-                                visible: showVoiceParticipantsHere
-                                spacing: 2
-                                Repeater {
-                                    model: voiceParticipantModel
-                                    delegate: Row {
-                                        spacing: 4
-                                        height: 16
-                                        Rectangle {
-                                            width: 6
-                                            height: 6
-                                            radius: 3
-                                            color: model.speaking ? theme.voiceSpeaking : theme.textFaint
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            visible: true
-                                        }
-                                        Text {
-                                            text: model.username || "Unknown"
-                                            color: theme.textMuted
-                                            font.pixelSize: 11
-                                            elide: Text.ElideRight
-                                            width: parent.parent.width - 20
-                                            anchors.verticalCenter: parent.verticalCenter
-                                        }
-                                    }
-                                }
-                            }
-
                             MouseArea {
                                 id: channelMa
                                 anchors.fill: parent
@@ -1450,26 +1317,16 @@ Window {
                                 cursorShape: isHiddenChannel ? Qt.ArrowCursor : Qt.PointingHandCursor
                                 onClicked: {
                                     if (isHiddenChannel) return
-                                    if (model.channelType === 2 || model.channelType === 13) {
-                                        voiceChannelName = model.name
-                                        voiceChannelId = model.channelId
-                                        voiceGuildId = currentGuildId
-                                        isVoiceConnected = true
-                                        isMuted = false
-                                        isDeafened = false
-                                        if (app) app.join_voice(currentGuildId, model.channelId)
-                                    } else {
-                                        cacheCurrentMessages()
-                                        currentChannelId = model.channelId
-                                        currentChannelName = model.name
-                                        currentChannelType = model.channelType
-                                        if (!restoreMessagesFromCache(model.channelId)) {
-                                            messageModel.clear()
-                                            messageList.hasMoreHistory = true
-                                            messageList.isLoadingMore = false
-                                        }
-                                        if (app) app.select_channel(model.channelId, model.channelType)
+                                    cacheCurrentMessages()
+                                    currentChannelId = model.channelId
+                                    currentChannelName = model.name
+                                    currentChannelType = model.channelType
+                                    if (!restoreMessagesFromCache(model.channelId)) {
+                                        messageModel.clear()
+                                        messageList.hasMoreHistory = true
+                                        messageList.isLoadingMore = false
                                     }
+                                    if (app) app.select_channel(model.channelId, model.channelType)
                                 }
                             }
                         }
@@ -1914,120 +1771,6 @@ Window {
                     }
                 }
 
-                // ─── Voice Panel ───
-                Rectangle {
-                    id: voicePanelInline
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: isVoiceConnected ? 96 : 0
-                    color: theme.bgSecondary
-                    clip: true
-                    visible: isVoiceConnected
-
-                    Behavior on Layout.preferredHeight { NumberAnimation { duration: theme.animSlow; easing.type: Easing.OutCubic } }
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 4
-
-                        RowLayout {
-                            spacing: 6
-                            Rectangle {
-                                width: 8
-                                height: 8
-                                radius: 4
-                                color: voiceConnectionState === "connected" ? theme.voicePositive :
-                                       (voiceConnectionState.indexOf("failed") >= 0 ? theme.danger : theme.voiceConnecting)
-                            }
-                            Text {
-                                text: voiceConnectionState === "connected" ? "Connected" :
-                                      voiceConnectionState.indexOf("failed") >= 0 ? "Failed" : "Connecting..."
-                                color: voiceConnectionState === "connected" ? theme.voicePositive :
-                                       (voiceConnectionState.indexOf("failed") >= 0 ? theme.danger : theme.voiceConnecting)
-                                font.family: fontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.Medium
-                            }
-                            Item { Layout.fillWidth: true }
-                            Text {
-                                text: voiceConnectionState === "connected" && voiceStatsPing !== "—" ? voiceStatsPing + " ms" : ""
-                                color: theme.textMuted
-                                font.pixelSize: 10
-                                visible: text !== ""
-                            }
-                        }
-                        Text {
-                            text: voiceChannelName || "Voice Channel"
-                            color: theme.textMuted
-                            font.family: fontFamily
-                            font.pixelSize: 10
-                            elide: Text.ElideRight
-                            Layout.fillWidth: true
-                        }
-
-                        RowLayout {
-                            spacing: 8
-                            Layout.alignment: Qt.AlignHCenter
-
-                            VoiceButton {
-                                icon: isMuted ? "🔇" : "🎤"
-                                isActive: isMuted
-                                activeColor: theme.danger
-                                onClicked: {
-                                    isMuted = !isMuted
-                                    if (app && isVoiceConnected) app.toggle_mute()
-                                }
-                            }
-                            VoiceButton {
-                                icon: isDeafened ? "🔇" : "🔊"
-                                isActive: isDeafened
-                                activeColor: theme.danger
-                                onClicked: {
-                                    isDeafened = !isDeafened
-                                    if (app && isVoiceConnected) app.toggle_deafen()
-                                }
-                            }
-                            VoiceButton {
-                                icon: "👻"
-                                isActive: isFakeMuted
-                                activeColor: theme.warning
-                                visible: app && app.is_plugin_enabled("fake-mute")
-                                onClicked: {
-                                    isFakeMuted = !isFakeMuted
-                                    if (app && isVoiceConnected) app.toggle_fake_mute()
-                                }
-                            }
-                            VoiceButton {
-                                icon: "🎧"
-                                isActive: isFakeDeafened
-                                activeColor: theme.warning
-                                visible: app && app.is_plugin_enabled("fake-deafen")
-                                onClicked: {
-                                    isFakeDeafened = !isFakeDeafened
-                                    if (app && isVoiceConnected) app.toggle_fake_deafen()
-                                }
-                            }
-                            VoiceButton {
-                                icon: "✕"
-                                isActive: true
-                                activeColor: theme.danger
-                                isDestructive: true
-                                onClicked: {
-                                    if (app) app.leave_voice()
-                                    isVoiceConnected = false
-                                    voiceChannelName = ""
-                                    voiceChannelId = ""
-                                    voiceGuildId = ""
-                                    isMuted = false
-                                    isDeafened = false
-                                    isFakeMuted = false
-                                    isFakeDeafened = false
-                                }
-                            }
-                        }
-                    }
-                }
-
                 // User panel at bottom
                 Rectangle {
                     Layout.fillWidth: true
@@ -2258,7 +2001,7 @@ Window {
                             }
                             color: theme.textFaint
                             font.family: fontFamily
-                            font.pixelSize: isVoiceChannel ? 16 : 20
+                            font.pixelSize: 20
                             font.bold: true
                             visible: currentChannelName !== ""
                         }
@@ -2295,7 +2038,7 @@ Window {
                         Rectangle {
                             width: 26; height: 26; radius: theme.radiusSmall
                             color: pinsMa.containsMouse ? theme.bgHover : "transparent"
-                            visible: currentChannelId !== "" && !isVoiceChannel
+                            visible: currentChannelId !== ""
 
                             Text {
                                 anchors.centerIn: parent
@@ -2364,136 +2107,6 @@ Window {
                                 GradientStop { position: 0.0; color: "#25000000" }
                                 GradientStop { position: 1.0; color: "transparent" }
                             }
-                        }
-                    }
-                }
-
-                // ── Voice Channel View (shown instead of messages for voice/stage) ──
-                Item {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    visible: isVoiceChannel && currentChannelId !== ""
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        spacing: 12
-
-                        // Connection banner
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 44
-                            visible: isVoiceConnected || voiceConnectionState.indexOf("connecting") >= 0 || voiceConnectionState.indexOf("discovering") >= 0 || voiceConnectionState.indexOf("selecting") >= 0
-                            color: theme.bgSecondary
-                            radius: theme.radiusSmall
-                            border.width: 1
-                            border.color: theme.border
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.margins: 10
-                                spacing: 8
-                                Rectangle {
-                                    width: 10
-                                    height: 10
-                                    radius: 5
-                                    color: voiceConnectionState === "connected" ? theme.voicePositive :
-                                           (voiceConnectionState.indexOf("failed") >= 0 ? theme.danger : theme.voiceConnecting)
-                                    Layout.alignment: Qt.AlignVCenter
-                                }
-                                Text {
-                                    text: voiceConnectionState === "connected" ? "Connected" :
-                                          voiceConnectionState.indexOf("failed") >= 0 ? "Connection failed" :
-                                          "Connecting..."
-                                    color: theme.textNormal
-                                    font.pixelSize: 12
-                                    font.weight: Font.Medium
-                                    Layout.alignment: Qt.AlignVCenter
-                                }
-                            }
-                        }
-
-                        // Join button when not in voice
-                        Item {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 80
-                            visible: !isVoiceConnected && voiceConnectionState !== "connected"
-                            ColumnLayout {
-                                anchors.centerIn: parent
-                                spacing: 8
-                                Text {
-                                    text: currentChannelType === 13 ? "\u{1F3A4}" : "\u{1F50A}"
-                                    font.pixelSize: 36
-                                    color: theme.textMuted
-                                    Layout.alignment: Qt.AlignHCenter
-                                }
-                                Rectangle {
-                                    Layout.preferredWidth: joinVoiceBtnLabel.implicitWidth + 32
-                                    Layout.preferredHeight: 36
-                                    Layout.alignment: Qt.AlignHCenter
-                                    radius: theme.radiusMed
-                                    color: joinVoiceBtnMa.containsMouse ? theme.accentHover : theme.accent
-                                    Text {
-                                        id: joinVoiceBtnLabel
-                                        anchors.centerIn: parent
-                                        text: currentChannelType === 13 ? "Join Stage" : "Join Voice"
-                                        color: "#ffffff"
-                                        font.pixelSize: 13
-                                        font.weight: Font.Medium
-                                    }
-                                    MouseArea {
-                                        id: joinVoiceBtnMa
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            voiceChannelName = currentChannelName
-                                            voiceChannelId = currentChannelId
-                                            voiceGuildId = currentGuildId
-                                            isVoiceConnected = true
-                                            isMuted = false
-                                            isDeafened = false
-                                            if (app) app.join_voice(currentGuildId, currentChannelId)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Participant grid
-                        GridView {
-                            id: voiceParticipantGrid
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            visible: isVoiceConnected || voiceParticipantModel.count > 0
-                            cellWidth: 150
-                            cellHeight: 170
-                            clip: true
-                            model: voiceParticipantModel
-                            delegate: VoiceParticipantCard {
-                                width: voiceParticipantGrid.cellWidth - 10
-                                height: voiceParticipantGrid.cellHeight - 10
-                                participantName: model.username || "Unknown"
-                                avatarUrl: model.avatarUrl || ""
-                                isSpeaking: !!model.speaking
-                                isMuted: !!(model.selfMute || model.serverMute)
-                                isDeafened: !!(model.selfDeaf || model.serverDeaf)
-                                isVideo: !!model.selfVideo
-                                isStreaming: !!model.selfStream
-                            }
-                        }
-
-                        // Stats panel (developer)
-                        VoiceStatsPanel {
-                            Layout.fillWidth: true
-                            Layout.alignment: Qt.AlignBottom
-                            visible: isVoiceConnected && voiceConnectionState === "connected"
-                            pingMs: voiceStatsPing
-                            encryptionMode: voiceStatsEncryption
-                            endpoint: voiceStatsEndpoint
-                            ssrc: voiceStatsSsrc
-                            packetsSent: voiceStatsPacketsSent
-                            packetsReceived: voiceStatsPacketsReceived
-                            connectionDurationSecs: voiceStatsDuration
                         }
                     }
                 }
@@ -2778,7 +2391,7 @@ Window {
                     id: messageList
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    visible: !isVoiceChannel && currentChannelId !== ""
+                    visible: currentChannelId !== ""
                     model: messageModel
                     focus: false
                     clip: true
@@ -3776,7 +3389,7 @@ Window {
 
                 // Typing indicator (role-colored names when typing_display_json available)
                 Item {
-                    visible: !isVoiceChannel && typingDisplay.length > 0
+                    visible: typingDisplay.length > 0
                     Layout.fillWidth: true
                     Layout.preferredHeight: visible ? 18 : 0
                     Layout.leftMargin: 20
@@ -3828,7 +3441,7 @@ Window {
 
                 // Reply preview bar (shown when replying)
                 Rectangle {
-                    visible: !isVoiceChannel && replyToMessageId.length > 0
+                    visible: replyToMessageId.length > 0
                     Layout.fillWidth: true
                     Layout.preferredHeight: visible ? 34 : 0
                     Layout.leftMargin: 16
@@ -3894,9 +3507,9 @@ Window {
                     }
                 }
 
-                // Message input area (hidden for voice channels)
+                // Message input area
                 Rectangle {
-                    visible: !isVoiceChannel
+                    visible: true
                     Layout.fillWidth: true
                     Layout.preferredHeight: theme.messageInputH
                     Layout.leftMargin: 16
@@ -4748,403 +4361,6 @@ Window {
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-
-    // ══════════ Proxy Configuration Popup ══════════
-    Popup {
-        id: proxyConfigPopup
-        anchors.centerIn: parent
-        width: 520
-        height: Math.min(680, root.height - 80)
-        modal: true
-        closePolicy: Popup.NoAutoClose
-        padding: 0
-        focus: false
-
-        property var mullvadCountries: []
-        property string selectedMode: "mullvad"
-        property string selectedCountry: ""
-        property string selectedCity: ""
-
-        onOpened: {
-            loadProxySettings()
-            if (app) app.load_mullvad_servers()
-        }
-
-        function loadProxySettings() {
-            if (!app) return
-            var settingsJson = app.get_proxy_settings()
-            if (settingsJson && String(settingsJson).length > 0) {
-                var settings = JSON.parse(String(settingsJson))
-                if (!settings.enabled) {
-                    selectedMode = "disabled"
-                } else {
-                    selectedMode = settings.mode || "mullvad"
-                    selectedCountry = settings.mullvad_country || ""
-                    selectedCity = settings.mullvad_city || ""
-                    customHostInput.text = settings.custom_host || "127.0.0.1"
-                    customPortInput.text = String(settings.custom_port || 1080)
-                }
-            }
-        }
-
-        function saveAndConnect() {
-            if (!app) return
-            var enabled = selectedMode !== "disabled"
-            var mode = selectedMode === "mullvad" ? "mullvad" : "custom"
-            var host = customHostInput.text ? customHostInput.text : "127.0.0.1"
-            var port = customPortInput.text ? (parseInt(customPortInput.text) || 1080) : 1080
-            app.set_proxy_settings(enabled, mode, selectedCountry, selectedCity, "", host, port)
-            proxyConfigPopup.close()
-        }
-
-        background: Rectangle {
-            color: theme.bgPrimary
-            radius: theme.radiusLarge
-            border.color: theme.border
-            border.width: 1
-        }
-
-        Overlay.modal: Rectangle {
-            color: "#dd000000"
-        }
-
-        contentItem: ColumnLayout {
-            spacing: 0
-
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 56
-                color: theme.bgSecondary
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: 24
-                    anchors.rightMargin: 24
-                    Text {
-                        text: "\u{1F512} Proxy Configuration"
-                        color: theme.textNormal
-                        font.family: fontFamily
-                        font.pixelSize: 18
-                        font.weight: Font.DemiBold
-                    }
-                    Item { Layout.fillWidth: true }
-                }
-            }
-
-            Flickable {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                contentHeight: proxyContent.implicitHeight
-                clip: true
-                boundsBehavior: Flickable.StopAtBounds
-                ScrollBar.vertical: ScrollBar {
-                    policy: ScrollBar.AsNeeded
-                    contentItem: Rectangle {
-                        implicitWidth: 4
-                        radius: 2
-                        color: theme.textFaint
-                        opacity: parent.active ? 0.6 : 0.0
-                    }
-                }
-                ColumnLayout {
-                    id: proxyContent
-                    width: parent.width
-                    spacing: 20
-                    Item { height: 4 }
-
-                    ColumnLayout {
-                        Layout.leftMargin: 24
-                        Layout.rightMargin: 24
-                        Layout.fillWidth: true
-                        spacing: 8
-                        Text {
-                            text: "PROXY MODE"
-                            color: theme.textMuted
-                            font.family: fontFamily
-                            font.pixelSize: 11
-                            font.bold: true
-                        }
-                        RowLayout {
-                            spacing: 8
-                            Repeater {
-                                model: [
-                                    { name: "Mullvad", value: "mullvad", icon: "\u{1F6E1}" },
-                                    { name: "Custom", value: "custom", icon: "\u{2699}" },
-                                    { name: "Disabled", value: "disabled", icon: "\u{1F6AB}" }
-                                ]
-                                delegate: Rectangle {
-                                    Layout.preferredWidth: 150
-                                    Layout.preferredHeight: 56
-                                    radius: theme.radiusMed
-                                    color: proxyConfigPopup.selectedMode === modelData.value ? theme.bgActive : theme.bgSecondary
-                                    border.color: proxyConfigPopup.selectedMode === modelData.value ? theme.accent : "transparent"
-                                    border.width: 2
-                                    ColumnLayout {
-                                        anchors.centerIn: parent
-                                        spacing: 2
-                                        Text {
-                                            text: modelData.icon
-                                            font.pixelSize: 18
-                                            Layout.alignment: Qt.AlignHCenter
-                                        }
-                                        Text {
-                                            text: modelData.name
-                                            color: proxyConfigPopup.selectedMode === modelData.value ? theme.accent : theme.textNormal
-                                            font.family: fontFamily
-                                            font.pixelSize: 12
-                                            font.weight: Font.Medium
-                                            Layout.alignment: Qt.AlignHCenter
-                                        }
-                                    }
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: proxyConfigPopup.selectedMode = modelData.value
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Rectangle { Layout.fillWidth: true; Layout.leftMargin: 24; Layout.rightMargin: 24; height: 1; color: theme.separator }
-
-                    ColumnLayout {
-                        visible: proxyConfigPopup.selectedMode === "mullvad"
-                        Layout.leftMargin: 24
-                        Layout.rightMargin: 24
-                        Layout.fillWidth: true
-                        spacing: 12
-                        Text {
-                            text: "MULLVAD LOCATION"
-                            color: theme.textMuted
-                            font.family: fontFamily
-                            font.pixelSize: 11
-                            font.bold: true
-                        }
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 44
-                            radius: theme.radiusMed
-                            color: theme.bgSecondary
-                            border.width: 1
-                            border.color: countryCombo.activeFocus ? theme.accent : theme.border
-                            ComboBox {
-                                id: countryCombo
-                                anchors.fill: parent
-                                anchors.margins: 1
-                                model: proxyConfigPopup.mullvadCountries
-                                textRole: "name"
-                                currentIndex: {
-                                    var list = proxyConfigPopup.mullvadCountries
-                                    var sel = proxyConfigPopup.selectedCountry
-                                    for (var i = 0; i < list.length; i++) {
-                                        if (list[i].code === sel) return i
-                                    }
-                                    return 0
-                                }
-                                onActivated: function(index) {
-                                    if (index >= 0 && index < proxyConfigPopup.mullvadCountries.length) {
-                                        proxyConfigPopup.selectedCountry = proxyConfigPopup.mullvadCountries[index].code
-                                        proxyConfigPopup.selectedCity = ""
-                                    }
-                                }
-                                background: Rectangle { color: "transparent" }
-                                contentItem: Text {
-                                    text: (countryCombo.currentIndex >= 0 && countryCombo.currentIndex < proxyConfigPopup.mullvadCountries.length)
-                                          ? proxyConfigPopup.mullvadCountries[countryCombo.currentIndex].name : "Select Country..."
-                                    color: theme.textNormal
-                                    font.family: fontFamily
-                                    font.pixelSize: 13
-                                    verticalAlignment: Text.AlignVCenter
-                                    leftPadding: 12
-                                }
-                            }
-                        }
-                        Rectangle {
-                            visible: proxyConfigPopup.selectedCountry !== ""
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 44
-                            radius: theme.radiusMed
-                            color: theme.bgSecondary
-                            border.width: 1
-                            border.color: cityCombo.activeFocus ? theme.accent : theme.border
-                            ComboBox {
-                                id: cityCombo
-                                anchors.fill: parent
-                                anchors.margins: 1
-                                model: {
-                                    if (proxyConfigPopup.selectedCountry === "") return []
-                                    for (var i = 0; i < proxyConfigPopup.mullvadCountries.length; i++) {
-                                        if (proxyConfigPopup.mullvadCountries[i].code === proxyConfigPopup.selectedCountry)
-                                            return proxyConfigPopup.mullvadCountries[i].cities || []
-                                    }
-                                    return []
-                                }
-                                textRole: "name"
-                                onActivated: function(index) {
-                                    var cities = cityCombo.model
-                                    if (index >= 0 && index < cities.length)
-                                        proxyConfigPopup.selectedCity = cities[index].code
-                                }
-                                background: Rectangle { color: "transparent" }
-                                contentItem: Text {
-                                    text: {
-                                        var m = cityCombo.model
-                                        if (cityCombo.currentIndex >= 0 && cityCombo.currentIndex < m.length)
-                                            return m[cityCombo.currentIndex].name
-                                        return "Any City (Auto)"
-                                    }
-                                    color: theme.textNormal
-                                    font.family: fontFamily
-                                    font.pixelSize: 13
-                                    verticalAlignment: Text.AlignVCenter
-                                    leftPadding: 12
-                                }
-                            }
-                        }
-                        Text {
-                            text: "Select a country and optionally a city. Leaving city blank will automatically select the best server."
-                            color: theme.textMuted
-                            font.family: fontFamily
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                            Layout.fillWidth: true
-                        }
-                    }
-
-                    ColumnLayout {
-                        visible: proxyConfigPopup.selectedMode === "custom"
-                        Layout.leftMargin: 24
-                        Layout.rightMargin: 24
-                        Layout.fillWidth: true
-                        spacing: 12
-                        Text {
-                            text: "CUSTOM SOCKS5 PROXY"
-                            color: theme.textMuted
-                            font.family: fontFamily
-                            font.pixelSize: 11
-                            font.bold: true
-                        }
-                        RowLayout {
-                            spacing: 8
-                            Layout.fillWidth: true
-                            Rectangle {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 44
-                                radius: theme.radiusMed
-                                color: theme.bgSecondary
-                                border.width: 1
-                                border.color: theme.border
-                                TextField {
-                                    id: customHostInput
-                                    anchors.fill: parent
-                                    anchors.margins: 1
-                                    placeholderText: "127.0.0.1"
-                                    color: theme.textNormal
-                                    font.family: fontFamily
-                                    font.pixelSize: 13
-                                    leftPadding: 12
-                                    background: Rectangle { color: "transparent" }
-                                }
-                            }
-                            Rectangle {
-                                Layout.preferredWidth: 100
-                                Layout.preferredHeight: 44
-                                radius: theme.radiusMed
-                                color: theme.bgSecondary
-                                border.width: 1
-                                border.color: theme.border
-                                TextField {
-                                    id: customPortInput
-                                    anchors.fill: parent
-                                    anchors.margins: 1
-                                    placeholderText: "1080"
-                                    color: theme.textNormal
-                                    font.family: fontFamily
-                                    font.pixelSize: 13
-                                    leftPadding: 12
-                                    validator: IntValidator { bottom: 1; top: 65535 }
-                                    background: Rectangle { color: "transparent" }
-                                }
-                            }
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.leftMargin: 24
-                        Layout.rightMargin: 24
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: infoText.implicitHeight + 24
-                        radius: theme.radiusMed
-                        color: theme.bgSecondary
-                        border.color: theme.border
-                        border.width: 1
-                        Text {
-                            id: infoText
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            text: {
-                                if (proxyConfigPopup.selectedMode === "mullvad")
-                                    return "Mullvad SOCKS5 proxies require an active Mullvad VPN connection. Make sure you are connected to Mullvad VPN before using this option."
-                                if (proxyConfigPopup.selectedMode === "custom")
-                                    return "Enter your SOCKS5 proxy address and port. All Discord traffic will be routed through this proxy."
-                                return "Connecting without a proxy may expose your real IP address."
-                            }
-                            color: theme.textSecondary
-                            font.family: fontFamily
-                            font.pixelSize: 12
-                            wrapMode: Text.WordWrap
-                        }
-                    }
-                    Item { height: 8 }
-                }
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 70
-                color: theme.bgSecondary
-                RowLayout {
-                    anchors.centerIn: parent
-                    spacing: 12
-                    Rectangle {
-                        Layout.preferredWidth: 180
-                        Layout.preferredHeight: 44
-                        radius: theme.radiusMed
-                        color: connectMa.containsMouse ? theme.accentHover : theme.accent
-                        Behavior on color { ColorAnimation { duration: theme.animFast } }
-                        Text {
-                            anchors.centerIn: parent
-                            text: "Connect"
-                            color: "#ffffff"
-                            font.family: fontFamily
-                            font.pixelSize: 14
-                            font.weight: Font.DemiBold
-                        }
-                        MouseArea {
-                            id: connectMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: proxyConfigPopup.saveAndConnect()
-                        }
-                    }
-                }
-            }
-        }
-
-        Timer {
-            interval: 100
-            running: proxyConfigPopup.opened
-            repeat: true
-            onTriggered: {
-                if (!app) return
-                var serversJson = app.consume_mullvad_servers()
-                if (serversJson && String(serversJson).length > 0) {
-                    proxyConfigPopup.mullvadCountries = JSON.parse(String(serversJson))
                 }
             }
         }
@@ -6300,6 +5516,15 @@ Window {
                 }
                 pluginUpdateStatus = ""
                 deletedMessageStyle = app.get_deleted_message_style()
+                var proxyJson = app.get_proxy_settings()
+                if (proxyJson && String(proxyJson).length > 0) {
+                    var ps = JSON.parse(String(proxyJson))
+                    proxyToggle.checked = ps.enabled || false
+                    proxyHostInput.text = ps.host || "127.0.0.1"
+                    proxyPortInput.text = String(ps.port || 1080)
+                    proxyUsernameInput.text = ps.username || ""
+                    proxyPasswordInput.text = ps.password || ""
+                }
             }
         }
 
@@ -6542,6 +5767,111 @@ Window {
                             }
                         }
                     }
+                    Text {
+                        width: settingsColumn.width
+                        text: "NETWORK"
+                        color: theme.textMuted
+                        font.family: fontFamily
+                        font.pixelSize: 11
+                        font.bold: true
+                        topPadding: 12
+                        bottomPadding: 4
+                    }
+                    SettingToggle {
+                        id: proxyToggle
+                        width: settingsColumn.width
+                        label: "SOCKS5 Proxy"
+                        checked: false
+                        onToggled: proxyToggle.checked = !proxyToggle.checked
+                    }
+                    RowLayout {
+                        width: settingsColumn.width
+                        spacing: 8
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 36
+                            radius: theme.radiusSmall
+                            color: theme.bgSecondary
+                            border.width: 1
+                            border.color: theme.border
+                            TextField {
+                                id: proxyHostInput
+                                anchors.fill: parent
+                                anchors.margins: 1
+                                placeholderText: "127.0.0.1"
+                                text: "127.0.0.1"
+                                color: theme.textNormal
+                                font.family: fontFamily
+                                font.pixelSize: 12
+                                leftPadding: 8
+                                background: Rectangle { color: "transparent" }
+                            }
+                        }
+                        Rectangle {
+                            Layout.preferredWidth: 80
+                            Layout.preferredHeight: 36
+                            radius: theme.radiusSmall
+                            color: theme.bgSecondary
+                            border.width: 1
+                            border.color: theme.border
+                            TextField {
+                                id: proxyPortInput
+                                anchors.fill: parent
+                                anchors.margins: 1
+                                placeholderText: "1080"
+                                text: "1080"
+                                color: theme.textNormal
+                                font.family: fontFamily
+                                font.pixelSize: 12
+                                leftPadding: 8
+                                validator: IntValidator { bottom: 1; top: 65535 }
+                                background: Rectangle { color: "transparent" }
+                            }
+                        }
+                    }
+                    RowLayout {
+                        width: settingsColumn.width
+                        spacing: 8
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 36
+                            radius: theme.radiusSmall
+                            color: theme.bgSecondary
+                            border.width: 1
+                            border.color: theme.border
+                            TextField {
+                                id: proxyUsernameInput
+                                anchors.fill: parent
+                                anchors.margins: 1
+                                placeholderText: "username (optional)"
+                                color: theme.textNormal
+                                font.family: fontFamily
+                                font.pixelSize: 12
+                                leftPadding: 8
+                                background: Rectangle { color: "transparent" }
+                            }
+                        }
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 36
+                            radius: theme.radiusSmall
+                            color: theme.bgSecondary
+                            border.width: 1
+                            border.color: theme.border
+                            TextField {
+                                id: proxyPasswordInput
+                                anchors.fill: parent
+                                anchors.margins: 1
+                                placeholderText: "password (optional)"
+                                echoMode: TextInput.Password
+                                color: theme.textNormal
+                                font.family: fontFamily
+                                font.pixelSize: 12
+                                leftPadding: 8
+                                background: Rectangle { color: "transparent" }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -6608,7 +5938,18 @@ Window {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: settingsPopup.close()
+                        onClicked: {
+                            if (app) {
+                                app.set_proxy_settings(
+                                    proxyToggle.checked,
+                                    proxyHostInput.text || "127.0.0.1",
+                                    parseInt(proxyPortInput.text) || 1080,
+                                    proxyUsernameInput.text || "",
+                                    proxyPasswordInput.text || ""
+                                )
+                            }
+                            settingsPopup.close()
+                        }
                     }
                 }
             }
@@ -6969,209 +6310,6 @@ Window {
             onClicked: parent.clicked()
         }
     }
-
-    // Voice control button
-    component VoiceButton: Rectangle {
-        property string icon: ""
-        property bool isActive: false
-        property color activeColor: theme.danger
-        property bool isDestructive: false
-        signal clicked()
-
-        width: 26; height: 26; radius: 13
-        color: isActive || isDestructive ? activeColor :
-               voiceBtnMa.containsMouse ? theme.bgHover : theme.bgTertiary
-
-        Text {
-            anchors.centerIn: parent
-            text: parent.icon
-            color: "#ffffff"
-            font.pixelSize: 12
-        }
-
-        MouseArea {
-            id: voiceBtnMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: parent.clicked()
-        }
-    }
-
-    // Voice participant card for the grid
-    component VoiceParticipantCard: Rectangle {
-        id: participantCardRoot
-        property string participantName: ""
-        property string avatarUrl: ""
-        property bool isSpeaking: false
-        property bool isMuted: false
-        property bool isDeafened: false
-        property bool isVideo: false
-        property bool isStreaming: false
-
-        width: 140
-        height: 160
-        radius: theme.radiusMed
-        color: isSpeaking ? theme.bgTertiary : theme.bgSecondary
-        border.width: isSpeaking ? 2 : 0
-        property real borderOpacity: 1.0
-        border.color: Qt.rgba(
-            theme.voiceSpeaking.r, theme.voiceSpeaking.g, theme.voiceSpeaking.b,
-            borderOpacity
-        )
-        SequentialAnimation on borderOpacity {
-            running: participantCardRoot.isSpeaking
-            loops: Animation.Infinite
-            NumberAnimation { to: 0.9; duration: theme.animNormal; easing.type: Easing.InOutQuad }
-            NumberAnimation { to: 0.4; duration: theme.animNormal; easing.type: Easing.InOutQuad }
-        }
-
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: 10
-            spacing: 6
-
-            Item {
-                Layout.preferredWidth: 64
-                Layout.preferredHeight: 64
-                Layout.alignment: Qt.AlignHCenter
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: width / 2
-                    color: "transparent"
-                    border.width: participantCardRoot.isSpeaking ? 3 : 0
-                    border.color: theme.voiceSpeaking
-                    opacity: participantCardRoot.isSpeaking ? 0.9 : 0
-
-                    SequentialAnimation on opacity {
-                        running: participantCardRoot.isSpeaking
-                        loops: Animation.Infinite
-                        NumberAnimation { to: 0.5; duration: theme.animSlow; easing.type: Easing.InOutQuad }
-                        NumberAnimation { to: 1; duration: theme.animSlow; easing.type: Easing.InOutQuad }
-                    }
-                }
-
-                DAvatar {
-                    anchors.centerIn: parent
-                    size: 60
-                    imageUrl: participantCardRoot.avatarUrl || ""
-                    fallbackText: participantCardRoot.participantName || "?"
-                }
-            }
-
-            Text {
-                Layout.fillWidth: true
-                text: participantCardRoot.participantName || "Unknown"
-                color: theme.textNormal
-                font.pixelSize: 13
-                font.weight: Font.Medium
-                elide: Text.ElideRight
-                horizontalAlignment: Text.AlignHCenter
-            }
-
-            RowLayout {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: 4
-                Text { text: participantCardRoot.isMuted ? "\u{1F507}" : ""; font.pixelSize: 10; color: theme.textMuted; visible: participantCardRoot.isMuted }
-                Text { text: participantCardRoot.isDeafened ? "\u{1F508}" : ""; font.pixelSize: 10; color: theme.textMuted; visible: participantCardRoot.isDeafened }
-                Text { text: participantCardRoot.isVideo ? "\u{1F4F9}" : ""; font.pixelSize: 10; color: theme.info; visible: participantCardRoot.isVideo }
-                Text { text: participantCardRoot.isStreaming ? "\u{1F3AC}" : ""; font.pixelSize: 10; color: theme.accent; visible: participantCardRoot.isStreaming }
-            }
-        }
-    }
-
-    // Developer-style voice stats panel
-    component VoiceStatsPanel: Rectangle {
-        property string pingMs: "—"
-        property string encryptionMode: "—"
-        property string endpoint: "—"
-        property string ssrc: "—"
-        property string packetsSent: "0"
-        property string packetsReceived: "0"
-        property string connectionDurationSecs: "0"
-
-        width: 280
-        height: contentCol.implicitHeight + 16
-        radius: theme.radiusSmall
-        color: theme.statsBg
-        border.width: 1
-        border.color: theme.border
-
-        Column {
-            id: contentCol
-            anchors.fill: parent
-            anchors.margins: 8
-            spacing: 4
-
-            Text {
-                text: "Voice connection"
-                font.family: theme.monospace
-                font.pixelSize: 10
-                color: theme.statsLabel
-            }
-            Text {
-                text: "  endpoint: " + endpoint
-                font.family: theme.monospace
-                font.pixelSize: 11
-                color: theme.statsFg
-            }
-            Text {
-                text: "  encryption: " + encryptionMode
-                font.family: theme.monospace
-                font.pixelSize: 11
-                color: theme.statsFg
-            }
-            Text {
-                text: "  ssrc: " + ssrc
-                font.family: theme.monospace
-                font.pixelSize: 11
-                color: theme.statsFg
-            }
-            Item { height: 6 }
-            Text {
-                text: "Network"
-                font.family: theme.monospace
-                font.pixelSize: 10
-                color: theme.statsLabel
-            }
-            Text {
-                text: "  ping: " + pingMs + " ms"
-                font.family: theme.monospace
-                font.pixelSize: 11
-                color: theme.statsFg
-            }
-            Text {
-                text: "  sent: " + packetsSent + "  recv: " + packetsReceived
-                font.family: theme.monospace
-                font.pixelSize: 11
-                color: theme.statsFg
-            }
-            Item { height: 6 }
-            Text {
-                text: "Uptime"
-                font.family: theme.monospace
-                font.pixelSize: 10
-                color: theme.statsLabel
-            }
-            Text {
-                text: "  " + connectionDurationSecs + " s"
-                font.family: theme.monospace
-                font.pixelSize: 11
-                color: theme.statsFg
-            }
-        }
-    }
-
-    // ══════════ Voice State ══════════
-    property bool isVoiceConnected: false
-    property string voiceChannelName: ""
-    property string voiceChannelId: ""
-    property string voiceGuildId: ""
-    property bool isMuted: false
-    property bool isDeafened: false
-    property bool isFakeMuted: false
-    property bool isFakeDeafened: false
 
     // ══════════ Message Context Menu ══════════
     Popup {
@@ -8920,24 +8058,13 @@ Window {
                 messageList.isLoadingMore = false
                 if (app) app.select_channel(item.switchId, item.switchChannelType)
             } else {
-                if (item.switchChannelType === 2 || item.switchChannelType === 13) {
-                    // Voice channel
-                    voiceChannelName = item.switchName
-                    voiceChannelId = item.switchId
-                    voiceGuildId = item.switchGuildId
-                    isVoiceConnected = true
-                    isMuted = false
-                    isDeafened = false
-                    if (app) app.join_voice(item.switchGuildId, item.switchId)
-                } else {
-                    currentChannelId = item.switchId
-                    currentChannelName = item.switchName
-                    currentChannelType = item.switchChannelType
-                    messageModel.clear()
-                    messageList.hasMoreHistory = true
-                    messageList.isLoadingMore = false
-                    if (app) app.select_channel(item.switchId, item.switchChannelType)
-                }
+                currentChannelId = item.switchId
+                currentChannelName = item.switchName
+                currentChannelType = item.switchChannelType
+                messageModel.clear()
+                messageList.hasMoreHistory = true
+                messageList.isLoadingMore = false
+                if (app) app.select_channel(item.switchId, item.switchChannelType)
             }
             quickSwitcherPopup.close()
         }
@@ -9211,8 +8338,6 @@ Window {
     Shortcut { sequence: "Ctrl+E"; onActivated: emojiPopup.open() }
     Shortcut { sequence: "Ctrl+G"; onActivated: gifPopup.open() }
     Shortcut { sequence: "Escape"; onActivated: { emojiPopup.close(); gifPopup.close(); settingsPopup.close(); captchaPopup.close(); editPopup.close(); reactionPickerPopup.close(); quickSwitcherPopup.close(); pinsPopup.close(); pluginModalPopup.close(); joinServerPopup.close(); clearReply() } }
-    Shortcut { sequence: "Ctrl+Shift+M"; onActivated: { isMuted = !isMuted; if (app && isVoiceConnected) app.toggle_mute() } }
-    Shortcut { sequence: "Ctrl+Shift+D"; onActivated: { isDeafened = !isDeafened; if (app && isVoiceConnected) app.toggle_deafen() } }
     Shortcut { sequence: "Ctrl+Shift+S"; onActivated: silentMode = !silentMode }
     Shortcut { sequence: "Ctrl+1"; onActivated: { if (app && accountsList.length > 0) app.switch_account(accountsList[0].id) } }
     Shortcut { sequence: "Ctrl+2"; onActivated: { if (app && accountsList.length > 1) app.switch_account(accountsList[1].id) } }

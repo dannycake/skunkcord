@@ -75,10 +75,6 @@ Window {
         readonly property color mentionBg:    "#105865f2"
         readonly property color mentionText:  "#c9cdfb"
         readonly property color mentionPillBg: "#5865f2"   // Discord blurple for @mention count badges
-        readonly property color voicePositive:   "#23a55a"
-        readonly property color voiceConnecting: "#f0b132"
-        readonly property color voiceSpeaking:   "#23a55a"
-        readonly property color voiceSpeakingGlow: "#4023a55a"
         readonly property color statsBg:     "#000000"
         readonly property color statsFg:     "#40c463"
         readonly property color statsLabel:  "#6d7178"
@@ -123,7 +119,6 @@ Window {
         try { return JSON.parse(String(typingDisplayJson || "[]")) } catch (e) { return [] }
     })()
 
-    property string voiceConnectionState: app ? app.voice_connection_state : ""
     property string replyToMessageId: ""
     property string replyToAuthor: ""
     property string replyToAuthorColor: ""
@@ -134,7 +129,6 @@ Window {
     property string currentChannelId: ""
     property string currentChannelName: ""
     property int currentChannelType: 0
-    readonly property bool isVoiceChannel: currentChannelType === 2 || currentChannelType === 13
     onCurrentChannelIdChanged: { if (app) app.update_typing_for_channel(currentChannelId) }
     property string loginError: app ? app.error_message : ""
     property bool loginLoading: app ? app.is_loading : false
@@ -142,22 +136,6 @@ Window {
     property string deletedMessageStyle: "strikethrough"
     property var pluginUiData: ({})
     property var pluginToolbarButtons: []
-
-    // Voice state
-    property bool isVoiceConnected: false
-    property bool isMuted: false
-    property bool isDeafened: false
-    property bool isFakeDeafened: false
-    property string voiceChannelId: ""
-    property string voiceChannelName: ""
-    property string voiceGuildId: ""
-    property string voiceStatsPing: "—"
-    property string voiceStatsEncryption: "—"
-    property string voiceStatsEndpoint: "—"
-    property string voiceStatsSsrc: "—"
-    property string voiceStatsPacketsSent: "0"
-    property string voiceStatsPacketsReceived: "0"
-    property string voiceStatsDuration: "0"
 
     Component.onCompleted: {
         if (app) deletedMessageStyle = app.get_deleted_message_style()
@@ -514,57 +492,6 @@ Window {
                 } catch(e) {}
             }
 
-            var vsj = app.consume_voice_state()
-            if (vsj.length > 0) {
-                if (vsj.indexOf("joined:") === 0) isVoiceConnected = true
-                else if (vsj === "disconnected") {
-                    isVoiceConnected = false; voiceChannelName = ""; voiceChannelId = ""; voiceGuildId = ""
-                    voiceParticipantModel.clear()
-                }
-                else if (vsj.indexOf("mute:") === 0) isMuted = (vsj === "mute:true")
-                else if (vsj.indexOf("deafen:") === 0) { var deaf = (vsj === "deafen:true"); isDeafened = deaf; if (deaf) isMuted = true }
-                else if (vsj.indexOf("fake_deafen:") === 0) isFakeDeafened = (vsj === "fake_deafen:true")
-            }
-
-            var vpj = app.consume_voice_participants()
-            if (vpj.length > 2) {
-                try {
-                    var vpData = JSON.parse(vpj)
-                    if (vpData.participants) {
-                        voiceParticipantModel.clear()
-                        for (var vpi = 0; vpi < vpData.participants.length; vpi++) voiceParticipantModel.append(vpData.participants[vpi])
-                    }
-                } catch(e) {}
-            }
-
-            var suj = app.consume_speaking_users()
-            if (suj.length > 2) {
-                try {
-                    var suArr = JSON.parse(suj)
-                    for (var sui = 0; sui < suArr.length; sui++) {
-                        for (var spi = 0; spi < voiceParticipantModel.count; spi++) {
-                            if (voiceParticipantModel.get(spi).userId === suArr[sui].userId) {
-                                voiceParticipantModel.setProperty(spi, "speaking", !!suArr[sui].speaking); break
-                            }
-                        }
-                    }
-                } catch(e) {}
-            }
-
-            var vstj = app.consume_voice_stats()
-            if (vstj.length > 2) {
-                try {
-                    var vst = JSON.parse(vstj)
-                    voiceStatsPing = String(vst.pingMs != null ? vst.pingMs : "—")
-                    voiceStatsEncryption = vst.encryptionMode || "—"
-                    voiceStatsEndpoint = vst.endpoint || "—"
-                    voiceStatsSsrc = vst.ssrc != null ? String(vst.ssrc) : "—"
-                    voiceStatsPacketsSent = vst.packetsSent != null ? String(vst.packetsSent) : "0"
-                    voiceStatsPacketsReceived = vst.packetsReceived != null ? String(vst.packetsReceived) : "0"
-                    voiceStatsDuration = vst.connectionDurationSecs != null ? String(vst.connectionDurationSecs) : "0"
-                } catch(e) {}
-            }
-
             var puj = app.consume_plugin_ui()
             if (puj && String(puj).length > 2) {
                 try {
@@ -624,8 +551,6 @@ Window {
     ListModel { id: dmChannelModel }
     ListModel { id: messageModel }
     ListModel { id: memberModel }
-    ListModel { id: voiceParticipantModel }
-
     // ─── Navigation ───
     onIsLoggedInChanged: {
         if (isLoggedIn) navStack.replace(null, homeView)
@@ -962,22 +887,6 @@ Window {
                                             navStack.push(messagesView)
                                         }
                                     }
-                                }
-                            }
-                        }
-
-                        // Voice connection bar (shown when connected to voice)
-                        Rectangle {
-                            visible: isVoiceConnected || voiceConnectionState.indexOf("connecting") >= 0
-                            Layout.fillWidth: true; Layout.preferredHeight: visible ? 48 : 0; color: theme.bgTertiary
-                            RowLayout {
-                                anchors.fill: parent; anchors.leftMargin: 12; anchors.rightMargin: 12; spacing: 8
-                                Rectangle { width: 8; height: 8; radius: 4; color: voiceConnectionState === "connected" ? theme.voicePositive : theme.voiceConnecting }
-                                Text { Layout.fillWidth: true; text: voiceConnectionState === "connected" ? "Voice Connected" : "Connecting..."; color: voiceConnectionState === "connected" ? theme.voicePositive : theme.voiceConnecting; font.family: fontFamily; font.pixelSize: 13; font.bold: true }
-                                Rectangle {
-                                    width: 32; height: 32; radius: 16; color: theme.danger
-                                    Text { anchors.centerIn: parent; text: "\u{2716}"; color: "#fff"; font.pixelSize: 12 }
-                                    MouseArea { anchors.fill: parent; onClicked: { if (app) app.leave_voice() } }
                                 }
                             }
                         }
@@ -1328,13 +1237,13 @@ Window {
 
                 // Typing indicator
                 Item {
-                    visible: !isVoiceChannel && typingDisplay.length > 0; Layout.fillWidth: true; Layout.preferredHeight: visible ? 18 : 0; Layout.leftMargin: 16
+                    visible: typingDisplay.length > 0; Layout.fillWidth: true; Layout.preferredHeight: visible ? 18 : 0; Layout.leftMargin: 16
                     Text { anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; text: typingDisplay; color: theme.textMuted; font.family: fontFamily; font.pixelSize: 11; elide: Text.ElideRight }
                 }
 
                 // Reply preview
                 Rectangle {
-                    visible: !isVoiceChannel && replyToMessageId.length > 0; Layout.fillWidth: true; Layout.preferredHeight: visible ? 36 : 0
+                    visible: replyToMessageId.length > 0; Layout.fillWidth: true; Layout.preferredHeight: visible ? 36 : 0
                     Layout.leftMargin: 8; Layout.rightMargin: 8; radius: theme.radiusMed; color: theme.bgSecondary
                     RowLayout {
                         anchors.fill: parent; anchors.leftMargin: 10; anchors.rightMargin: 6; spacing: 4
@@ -1352,7 +1261,7 @@ Window {
 
                 // Message input
                 Rectangle {
-                    visible: !isVoiceChannel; Layout.fillWidth: true; Layout.preferredHeight: theme.messageInputH
+                    Layout.fillWidth: true; Layout.preferredHeight: theme.messageInputH
                     Layout.leftMargin: 8; Layout.rightMargin: 8; Layout.bottomMargin: 8; Layout.topMargin: replyToMessageId.length > 0 ? 0 : 4
                     radius: theme.radiusMed; color: theme.inputBg; border.width: messageInput.activeFocus ? 1 : 0; border.color: theme.accent
 
