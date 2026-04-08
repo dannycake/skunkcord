@@ -206,7 +206,7 @@ async fn main() -> anyhow::Result<()> {
     {
         use skunkcord::gateway::{Gateway, GatewayEvent};
         let fingerprint2 = BrowserFingerprint::new_chrome();
-        let mut gw = Gateway::new(token.clone(), fingerprint2);
+        let mut gw = Gateway::new(token.clone(), fingerprint2, None);
         let mut rx = gw.subscribe();
         let gw_handle = tokio::spawn(async move {
             if let Err(e) = gw.connect().await {

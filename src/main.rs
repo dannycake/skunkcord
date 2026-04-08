@@ -330,7 +330,7 @@ async fn run_app(
             println!("  Press Ctrl+C to disconnect.");
             println!();
 
-            let mut gateway = Gateway::new(token, fingerprint);
+            let mut gateway = Gateway::new(token, fingerprint, None);
             let mut events = gateway.subscribe();
 
             // Spawn event handler

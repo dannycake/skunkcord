@@ -17,6 +17,7 @@ pub use payloads::*;
 pub use session_limits::*;
 
 use crate::fingerprint::BrowserFingerprint;
+use crate::proxy::ProxyConfig;
 use crate::{DiscordError, Result, GATEWAY_VERSION};
 use futures_util::{SinkExt, StreamExt};
 use rand::Rng;
@@ -65,11 +66,13 @@ pub struct Gateway {
     pub shared_cmd_tx: Arc<tokio::sync::Mutex<Option<mpsc::Sender<GatewayCommand>>>>,
     /// Last heartbeat acknowledgement time
     last_heartbeat_ack: Arc<RwLock<Option<Instant>>>,
+    /// Proxy configuration for SOCKS5 tunneling
+    pub proxy_config: Arc<RwLock<Option<ProxyConfig>>>,
 }
 
 impl Gateway {
     /// Create a new gateway connection
-    pub fn new(token: String, fingerprint: BrowserFingerprint) -> Self {
+    pub fn new(token: String, fingerprint: BrowserFingerprint, proxy_config: Option<ProxyConfig>) -> Self {
         let (event_tx, _) = broadcast::channel(1024);
 
         Self {
@@ -84,6 +87,7 @@ impl Gateway {
             command_tx: None,
             shared_cmd_tx: Arc::new(tokio::sync::Mutex::new(None)),
             last_heartbeat_ack: Arc::new(RwLock::new(None)),
+            proxy_config: Arc::new(RwLock::new(proxy_config)),
         }
     }
 
@@ -127,9 +131,49 @@ impl Gateway {
             tracing::info!("Connecting to Gateway (fresh identify): {}", url);
         }
 
-        let (ws_stream, _) = connect_async(&url)
-            .await
-            .map_err(|e| DiscordError::WebSocket(e.to_string()))?;
+        let ws_stream = {
+            let proxy = self.proxy_config.read().await;
+            if let Some(ref p) = *proxy {
+                if p.enabled {
+                    tracing::info!("Connecting to Gateway via SOCKS5 proxy {}:{}", p.host, p.port);
+                    let proxy_addr = format!("{}:{}", p.host, p.port);
+                    let ws_url: url::Url = url.parse()
+                        .map_err(|e: url::ParseError| DiscordError::WebSocket(e.to_string()))?;
+                    let host = ws_url.host_str().unwrap_or("gateway.discord.gg").to_string();
+                    let port = ws_url.port().unwrap_or(443);
+
+                    let socks_stream = if let (Some(ref user), Some(ref pass)) = (&p.username, &p.password) {
+                        if !user.is_empty() && !pass.is_empty() {
+                            tokio_socks::tcp::Socks5Stream::connect_with_password(
+                                proxy_addr.as_str(), (host.as_str(), port), user, pass,
+                            ).await
+                        } else {
+                            tokio_socks::tcp::Socks5Stream::connect(
+                                proxy_addr.as_str(), (host.as_str(), port),
+                            ).await
+                        }
+                    } else {
+                        tokio_socks::tcp::Socks5Stream::connect(
+                            proxy_addr.as_str(), (host.as_str(), port),
+                        ).await
+                    }.map_err(|e| DiscordError::WebSocket(format!("SOCKS5 proxy error: {}", e)))?;
+
+                    let tcp_stream = socks_stream.into_inner();
+                    let (ws, _) = tokio_tungstenite::client_async_tls_with_config(
+                        &url, tcp_stream, None, None,
+                    ).await.map_err(|e| DiscordError::WebSocket(e.to_string()))?;
+                    ws
+                } else {
+                    let (ws, _) = connect_async(&url).await
+                        .map_err(|e| DiscordError::WebSocket(e.to_string()))?;
+                    ws
+                }
+            } else {
+                let (ws, _) = connect_async(&url).await
+                    .map_err(|e| DiscordError::WebSocket(e.to_string()))?;
+                ws
+            }
+        };
 
         *self.state.write().await = GatewayState::Connected;
 
@@ -555,6 +599,12 @@ impl Gateway {
                         GatewayCommand::Close => {
                             let _ = write.close().await;
                             *state.write().await = GatewayState::Disconnected;
+                            break;
+                        }
+                        GatewayCommand::Reconnect => {
+                            tracing::info!("Gateway reconnect requested (proxy change)");
+                            let _ = write.close().await;
+                            *state.write().await = GatewayState::Reconnecting;
                             break;
                         }
                     };
@@ -1043,6 +1093,8 @@ pub enum GatewayCommand {
     RequestSoundboardSounds(RequestSoundboardSounds),
     /// Disconnect the gateway
     Close,
+    /// Reconnect (e.g. after proxy change)
+    Reconnect,
 }
 
 /// Op 14: Lazy guild request — populates member sidebar data

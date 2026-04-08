@@ -115,10 +115,11 @@ pub async fn run_app_with_updates(
                 }
             });
 
-            let mut gateway = Gateway::new(token, fingerprint);
+            let mut gateway = Gateway::new(token, fingerprint, proxy_config);
             let mut events = gateway.subscribe();
 
             let gateway_cmd: SharedGatewayCmd = Arc::clone(&gateway.shared_cmd_tx);
+            let gateway_proxy = Arc::clone(&gateway.proxy_config);
             let bridge_cache: SharedBridgeCache = Arc::clone(&bridge.bridge_cache);
             let bridge_flags = Arc::clone(&bridge.flags);
             let bridge_plugin_enabled = Arc::clone(&bridge.plugin_enabled);
@@ -142,6 +143,7 @@ pub async fn run_app_with_updates(
                         &plugin_manifests,
                         message_logger_cache.as_ref(),
                         &storage_for_actions,
+                        Some(&gateway_proxy),
                     )
                     .await;
                 }

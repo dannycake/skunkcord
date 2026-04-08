@@ -47,6 +47,7 @@ tokio = { version = "1", features = ["full"] }
 
 # WebSocket support (rustls to avoid OpenSSL when using wreq-auth)
 tokio-tungstenite = { version = "0.21", default-features = false, features = ["connect", "rustls-tls-webpki-roots"] }
+tokio-socks = "0.5"
 futures-util = "0.3"
 
 # JSON serialization

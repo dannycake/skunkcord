@@ -2451,6 +2451,7 @@ pub async fn handle_ui_action(
     plugin_manifests: &Arc<tokio::sync::RwLock<std::collections::HashMap<String, crate::plugins::manifest::PluginManifest>>>,
     message_logger_cache: Option<&Arc<std::sync::RwLock<crate::plugins::message_logger::MessageCache>>>,
     storage: &Storage,
+    gateway_proxy: Option<&Arc<RwLock<Option<crate::proxy::ProxyConfig>>>>,
 ) {
     match action {
         UiAction::SelectGuild(guild_id) => {
@@ -3389,8 +3390,9 @@ pub async fn handle_ui_action(
                 settings.proxy_settings.username = username;
                 settings.proxy_settings.password = password;
                 let _ = storage.save_settings(&settings);
-                if let Some(proxy_config) = settings.proxy_settings.to_proxy_config() {
-                    if let Err(e) = client.set_proxy(Some(proxy_config)).await {
+                let new_proxy = settings.proxy_settings.to_proxy_config();
+                if let Some(ref proxy_config) = new_proxy {
+                    if let Err(e) = client.set_proxy(Some(proxy_config.clone())).await {
                         tracing::error!("Failed to set proxy: {}", e);
                     } else {
                         tracing::info!("Proxy configured successfully");
@@ -3400,6 +3402,14 @@ pub async fn handle_ui_action(
                         tracing::error!("Failed to clear proxy: {}", e);
                     } else {
                         tracing::info!("Proxy disabled");
+                    }
+                }
+                // Update gateway proxy and trigger reconnect
+                if let Some(gw_proxy) = gateway_proxy {
+                    *gw_proxy.write().await = new_proxy;
+                    let guard = gateway_cmd.lock().await;
+                    if let Some(ref tx) = *guard {
+                        let _ = tx.send(crate::gateway::GatewayCommand::Reconnect).await;
                     }
                 }
             } else {
