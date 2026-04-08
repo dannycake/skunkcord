@@ -30,8 +30,6 @@ These plugins ship with Skunkcord (sorted by priority):
 | message-logger | Track deleted and edited messages |
 | blur-nsfw | Blur NSFW images/attachments until clicked |
 | show-hidden-channels | Display channels you lack permission to view |
-| fake-mute | Appear muted while still receiving audio |
-| fake-deafen | Appear deafened while still hearing |
 | read-all-notifications | One-click mark all channels read |
 | clear-urls | Strip tracking params from URLs |
 | silent-messages | Send without triggering notifications |
@@ -107,11 +105,11 @@ git clone https://github.com/example/skunkcord-my-plugin
 
 ### Option Categories
 
-- `general`, `display`, `storage`, `voice`, `privacy`, `advanced`
+- `general`, `display`, `storage`, `privacy`, `advanced`
 
 ### Discord Events
 
-Plugins can subscribe to: `MESSAGE_CREATE`, `MESSAGE_UPDATE`, `MESSAGE_DELETE`, `MESSAGE_DELETE_BULK`, `READY`, `VOICE_STATE_UPDATE`, etc.
+Plugins can subscribe to: `MESSAGE_CREATE`, `MESSAGE_UPDATE`, `MESSAGE_DELETE`, `MESSAGE_DELETE_BULK`, `READY`, etc.
 
 ## Lua API (when Lua runtime is available)
 
@@ -129,10 +127,6 @@ local cache_size = config.cache_size or 10000
 discord.message_cache.insert({ id = "...", channel_id = "...", ... })
 discord.message_cache.mark_deleted(message_id)
 discord.message_cache.record_edit(message_id, new_content)
-
--- Fake mute/deafen
-discord.set_fake_mute(true)
-discord.get_fake_mute()
 
 -- Logging
 discord.log("Debug message")

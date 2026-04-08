@@ -2,7 +2,7 @@
 
 # skunkcord client
 
-a user-account discord client built with rust and qt, featuring browser fingerprint emulation, comprehensive api coverage, and built-in client mod features.
+a user-account discord client built with rust and qt, featuring comprehensive api coverage and built-in client mod features.
 
 **not affiliated with discord.** this project is an independent, community-built client. discord and the discord logo are trademarks of discord inc. we are not endorsed by, sponsored by, or connected with discord inc. in any way.
 
@@ -12,17 +12,8 @@ this software is for educational and personal use only. using self-bots or autom
 
 ## features
 
-### anti-detection & safety
+### client behavior
 
-- **feature flags system** — every non-vanilla feature is individually toggleable
-  - **paranoid mode** — one-click preset: only vanilla behavior, zero detection surface
-  - **standard mode** — safe features on, risky features off
-  - **full mode** — everything enabled, accept the risk
-  - detection risk labels (none/low/medium/high) on every feature
-- **browser fingerprint emulation** — chrome user agent, x-super-properties, sec-ch-ua, canvas/audio hashes
-- **dynamic build number** — scraped from discord's live web app every 6 hours (no stale values)
-- **human-like request timing** — random 50-300ms jitter between rapid api calls
-- **telemetry blocking** — /science, /track, /metrics silently blocked (same as vencord/betterdiscord)
 - **rate limit retry** — automatic retry with backoff on 429 responses (up to 3 attempts)
 - **cookie management** — cloudflare cookies (__dcfduid, __sdcfduid, __cfruid) properly managed
 - **socks5 proxy** — runtime-configurable proxy for all traffic (http + gateway websocket)
@@ -52,16 +43,15 @@ this software is for educational and personal use only. using self-bots or autom
 
 ### built-in client mod features
 
-| feature | risk | description |
-|---------|------|-------------|
-| **message logger** | medium | track deleted/edited messages with full edit history and search |
-| **show hidden channels** | medium | display channels you can't access with lock icon |
-| **clearurls** | none | strip tracking params from outgoing urls |
-| **silent message toggle** | none | send messages without triggering notifications |
-| **no reply mention** | low | replies don't ping by default |
-| **pin dms** | none | pin dm conversations to top of list |
-| **streamer mode** | none | auto-detect obs, hide emails/invites |
-| **read all notifications** | none | one-click mark everything as read |
+| feature | description |
+|---------|-------------|
+| **message logger** | track deleted/edited messages with full edit history and search |
+| **show hidden channels** | display channels you can't access with lock icon |
+| **clearurls** | strip tracking params from outgoing urls |
+| **silent message toggle** | send messages without triggering notifications |
+| **no reply mention** | replies don't ping by default |
+| **pin dms** | pin dm conversations to top of list |
+| **read all notifications** | one-click mark everything as read |
 
 ### markdown rendering
 
@@ -78,7 +68,7 @@ full discord-flavored markdown to html:
 ### multi-account support
 
 - **quick account switcher** — avatar ring in sidebar, click to swap
-- **per-account settings** — different feature flags per account
+- **per-account settings** — different settings per account
 - **per-account proxy** — different socks5 proxy per account
 
 ### gateway
@@ -107,9 +97,8 @@ skunkcord/
 ├── src/
 │   ├── main.rs                    # application entry point
 │   ├── lib.rs                     # library root, error types
-│   ├── build_number.rs            # dynamic build number scraping
 │   ├── client/                    # http client & api
-│   │   ├── mod.rs                 # discordclient, rate limiting, telemetry blocking
+│   │   ├── mod.rs                 # discordclient, rate limiting
 │   │   ├── api.rs                 # core rest api endpoints
 │   │   ├── session.rs             # authentication & sessions
 │   │   ├── account_switcher.rs    # multi-account management
@@ -122,23 +111,17 @@ skunkcord/
 │   │   ├── reactions.rs           # reaction endpoints
 │   │   ├── read_states.rs         # unread tracking
 │   │   ├── threads.rs             # thread endpoints
-│   │   ├── timing.rs              # request jitter
 │   │   └── typing.rs              # typing indicator throttle
 │   ├── captcha/                   # hcaptcha enterprise handling
 │   │   ├── mod.rs                 # detection, parsing, state machine
 │   │   └── widget.rs              # widget html generation with rqdata
-│   ├── features/                  # feature flags & client mod features
-│   │   ├── flags.rs               # featureflags, presets, risk metadata
+│   ├── features/                  # client mod features
 │   │   ├── message_logger.rs      # deleted/edited message tracking
 │   │   ├── clear_urls.rs          # tracking parameter removal
 │   │   ├── silent_messages.rs     # suppress notifications flag
 │   │   ├── emoji_picker.rs        # unicode emoji search & recent
 │   │   ├── gif_picker.rs          # tenor gif search
 │   │   └── notifications.rs       # notification config & muting
-│   ├── fingerprint/               # browser emulation
-│   │   ├── mod.rs                 # chrome fingerprint generation
-│   │   ├── browser_data.rs        # browser constants
-│   │   └── super_properties.rs    # x-super-properties header
 │   ├── gateway/                   # websocket gateway
 │   │   ├── mod.rs                 # connection, heartbeat, reconnect, socks5 proxy
 │   │   ├── events.rs              # 40+ event types
@@ -156,8 +139,7 @@ skunkcord/
 │       └── app_controller.rs      # qml-to-rust bridge
 ├── .github/workflows/
 │   ├── ci.yml                     # build, lint, test
-│   ├── api-watch.yml              # discord api change monitor
-│   └── build-number.yml           # build number auto-updater
+│   └── api-watch.yml              # discord api change monitor
 └── Cargo.toml
 ```
 
@@ -233,18 +215,6 @@ cd skunkcord-release && ./skunkcord
 ```
 
 for detailed deployment instructions, see **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
-
-## feature flags
-
-every feature can be toggled in settings. use presets for quick configuration:
-
-| preset | description | risk level |
-|--------|-------------|------------|
-| **paranoid** | only vanilla behavior + safety features | none |
-| **standard** | safe mod features enabled | low |
-| **full** | everything enabled | high |
-
-see `src/features/flags.rs` for the complete list of toggleable features with risk descriptions.
 
 ## license
 

@@ -30,16 +30,14 @@ Before submitting changes, ensure:
 
 ## Architecture
 
-The project is organized into 14 top-level modules:
+The project is organized into the following top-level modules:
 
 | Module | Purpose |
 |--------|---------|
 | `bridge` | Backend ↔ QML UI communication |
-| `build_number` | Dynamic Discord build number scraping |
 | `captcha` | hCaptcha Enterprise handling |
 | `client` | HTTP client with 32 API submodules |
-| `features` | Feature flags + 14 client mod features |
-| `fingerprint` | Chrome browser emulation |
+| `features` | Client mod features |
 | `gateway` | WebSocket + health + session limits |
 | `input` | Keyboard shortcuts registry |
 | `mobile_ffi` | C FFI for Android/iOS |
@@ -47,12 +45,6 @@ The project is organized into 14 top-level modules:
 | `security` | SSRF prevention, content sanitization |
 | `storage` | Session/settings persistence |
 | `ui` | Qt/QML interface components |
-| `voice` | Voice gateway, UDP, encryption, audio loop |
-
-## Feature Flags
-
-Every non-vanilla feature MUST be gated behind a feature flag in `features/flags.rs`.
-Include a `FeatureMeta` entry with detection risk level.
 
 ## Testing
 
@@ -61,10 +53,3 @@ Include a `FeatureMeta` entry with detection risk level.
 - All API endpoints should have at least one integration test
 - Use `DiscordClient::set_api_base()` to point at mock servers
 
-## Safety Profiles
-
-When adding new features, classify the detection risk:
-- **None:** Uses official API correctly, standard client behavior
-- **Low:** Valid API usage, just unusual defaults
-- **Medium:** Could be logged/detected if Discord looked
-- **High:** Contradicts expected client behavior (e.g., fake mute)

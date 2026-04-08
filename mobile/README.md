@@ -150,8 +150,6 @@ This builds the Rust library with `--no-default-features --features mobile`, the
 │    Rust Core Library     │  ← Shared across ALL platforms
 │  - Discord API client    │
 │  - Gateway WebSocket     │
-│  - Voice chat            │
-│  - Feature flags         │
 │  - Security              │
 │  - Message logger        │
 │  - All business logic    │
@@ -164,8 +162,6 @@ This builds the Rust library with `--no-default-features --features mobile`, the
 
 ## Mobile-Specific Considerations
 
-- **Fingerprint**: Use mobile super properties (Android/iOS) instead of Chrome
 - **Notifications**: Use platform push notification APIs
-- **Voice**: Use platform audio APIs (AAudio on Android, AVAudioEngine on iOS)
 - **Storage**: Use platform-appropriate data directories
 - **Background**: Handle app lifecycle (pause/resume gateway on background/foreground)

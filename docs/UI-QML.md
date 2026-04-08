@@ -21,16 +21,15 @@ This document describes the QML UI so developers can change layouts, styling, an
 2. **Channel sidebar** (middle)  
    - Fixed width `theme.channelBarWidth` (240).  
    - Header with guild name (or "Direct Messages"), then either:
-     - **Guild selected**: `channelListView` with `channelModel` (text/voice channels).  
+     - **Guild selected**: `channelListView` with `channelModel` (channels).  
      - **Home selected**: "DIRECT MESSAGES" heading, then either empty state or `dmListView` with `dmChannelModel`.  
    - Bottom: user panel (avatar, username, status, settings gear).
 
 3. **Main content area**  
    - Fills remaining width.  
    - Column: channel header (name, connection status, mark-read), then either:
-     - **Voice/Stage channel**: placeholder view (join voice, etc.).  
      - **No channel selected**: centered "Select a channel" empty state.  
-     - **Text channel selected**: message list (`messageList` ListView with `messageModel`), then message input bar.
+     - **Channel selected**: message list (`messageList` ListView with `messageModel`), then message input bar.
 
 4. **Member list** (right sidebar)  
    - Fixed width ~208 px (min 180, max 280). Visible when `currentGuildId !== "" && currentChannelId !== ""`.  
@@ -73,7 +72,7 @@ These mirror or drive backend state; many are updated by `check_for_updates()` a
 
 - `isLoggedIn`, `currentUserId`, `currentUserName`, `currentUserAvatar`, `currentStatus`, `connectionState`
 - `currentGuildId`, `currentGuildName`, `currentChannelId`, `currentChannelName`, `currentChannelType`
-- `isVoiceChannel` (derived), `replyToMessageId`, `replyToAuthor`, `replyToContent`, `silentMode`
+- `replyToMessageId`, `replyToAuthor`, `replyToContent`, `silentMode`
 - `messageModel`, `guildModel`, `channelModel`, `dmChannelModel`, `memberModel`
 
 When you add new UI state that the backend must know about, add a corresponding `UiAction` and `AppController` method. When the backend pushes new data, add a `UiUpdate` and handle it in the controller so these properties or models stay in sync.
@@ -81,7 +80,7 @@ When you add new UI state that the backend must know about, add a corresponding 
 ## Message list behavior
 
 - **ListView** `id: messageList`, `verticalLayoutDirection: ListView.BottomToTop` (newest at bottom).
-- **Visibility**: `visible: !isVoiceChannel && currentChannelId !== ""`. Hidden when no channel is selected so the footer and date dividers do not appear in the wrong place.
+- **Visibility**: `visible: currentChannelId !== ""`. Hidden when no channel is selected so the footer and date dividers do not appear in the wrong place.
 - **Footer**: Shows "Beginning of conversation" (or "This is the beginning of #channelname") when `!hasMoreHistory && messageModel.count > 0`; shows loading text when `isLoadingMore`.
 - **Day dividers**: Use **local** date from timestamps (`localDateStringFromTimestamp` + `formatDateLabel`) so "Today" and date labels match the user’s timezone. Delegates use `showDayDivider` from `messageList.isDayBoundary(index)`.
 - **Delegates**: Full message row (avatar, author, timestamp, content, reply bar, system message row, mention highlight) or condensed row; `focus: false` on the delegate and footer to avoid Qt focus rectangles.
@@ -98,7 +97,7 @@ Search for `component Foo:` to find all inline components.
 
 ## Popups and overlays
 
-- **settingsPopup**: Settings dialog (feature profile, toggles, Log out / Done).
+- **settingsPopup**: Settings dialog (toggles, Log out / Done).
 - **quickSwitcherPopup**: Ctrl+K channel/DM switcher.
 - **emojiPopup**, **gifPopup**, **editPopup**, **reactionPickerPopup**, **captchaPopup**: Other overlays.
 

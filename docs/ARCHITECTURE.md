@@ -6,7 +6,7 @@ This document describes how the codebase is structured so developers can navigat
 
 ## High-level overview
 
-- **Rust backend**: Discord API client, Gateway (WebSocket), voice, REST, feature flags.
+- **Rust backend**: Discord API client, Gateway (WebSocket), REST.
 - **Qt/QML frontend**: Single-window UI (`src/qml/main.qml`) with login, guild/channel list, message list, input.
 - **Bridge**: Connects backend and UI via two channels:
   - **UiAction**: QML → backend (e.g. `SelectGuild`, `SendMessage`, `SelectChannel`).
