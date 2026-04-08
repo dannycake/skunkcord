@@ -3187,7 +3187,11 @@ pub async fn handle_ui_action(
         }
 
         UiAction::Logout => {
+            let user_id = cache.lock().await.my_user_id.clone();
             client.logout().await;
+            if !user_id.is_empty() {
+                let _ = storage.delete_session(&user_id);
+            }
             if let Some(tx) = gateway_cmd.lock().await.as_ref() {
                 let _ = tx.send(GatewayCommand::Close).await;
             }
