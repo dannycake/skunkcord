@@ -2,17 +2,17 @@
 
 # skunkcord client
 
-a user-account discord client built with rust and qt, featuring browser fingerprint emulation, comprehensive api coverage, voice chat with fake mute, and built-in client mod features.
+a user-account discord client built with rust and qt, featuring browser fingerprint emulation, comprehensive api coverage, and built-in client mod features.
 
 **not affiliated with discord.** this project is an independent, community-built client. discord and the discord logo are trademarks of discord inc. we are not endorsed by, sponsored by, or connected with discord inc. in any way.
 
-## ⚠️ legal disclaimer
+## legal disclaimer
 
 this software is for educational and personal use only. using self-bots or automated user accounts may violate discord's terms of service. use at your own risk. **never share your user token with anyone.**
 
 ## features
 
-### 🛡️ anti-detection & safety
+### anti-detection & safety
 
 - **feature flags system** — every non-vanilla feature is individually toggleable
   - **paranoid mode** — one-click preset: only vanilla behavior, zero detection surface
@@ -25,9 +25,9 @@ this software is for educational and personal use only. using self-bots or autom
 - **telemetry blocking** — /science, /track, /metrics silently blocked (same as vencord/betterdiscord)
 - **rate limit retry** — automatic retry with backoff on 429 responses (up to 3 attempts)
 - **cookie management** — cloudflare cookies (__dcfduid, __sdcfduid, __cfruid) properly managed
-- **socks5 proxy support** — per-account proxy configuration with mullvad server presets
+- **socks5 proxy** — runtime-configurable proxy for all traffic (http + gateway websocket)
 
-### 💬 core discord functionality
+### core discord functionality
 
 - **messaging** — send, receive, edit, delete, bulk delete, search, pins, replies
 - **reactions** — add, remove, get users, delete all, per-emoji deletion
@@ -42,16 +42,7 @@ this software is for educational and personal use only. using self-bots or autom
 - **slash commands** — autocomplete, send interactions, buttons, modals
 - **read states** — unread tracking, mention counts, mark-as-read, bulk ack
 
-### 🎙️ voice chat
-
-- **voice gateway** — websocket connection to discord's voice servers
-- **encryption** — supports xchacha20, aes256-gcm, xsalsa20 modes (auto-selects best)
-- **ssrc mapping** — track who's speaking via ssrc-to-user mapping
-- **fake mute** ⚠️ high risk — appear muted while still receiving audio
-- **fake deafen** ⚠️ high risk — appear deafened while still hearing everything
-- **recording** — record incoming audio while fake muted/deafened
-
-### 🔒 security
+### security
 
 - **safe link previews** — ssrf prevention: blocks private ips, localhost, internal hostnames
 - **url spoofing detection** — catches percent-encoded domain tricks in embeds
@@ -59,7 +50,7 @@ this software is for educational and personal use only. using self-bots or autom
 - **clearurls** — strips 37+ tracking parameters (utm_*, fbclid, gclid, etc.)
 - **token security** — tokens never logged, stored securely
 
-### 📝 built-in client mod features
+### built-in client mod features
 
 | feature | risk | description |
 |---------|------|-------------|
@@ -72,9 +63,9 @@ this software is for educational and personal use only. using self-bots or autom
 | **streamer mode** | none | auto-detect obs, hide emails/invites |
 | **read all notifications** | none | one-click mark everything as read |
 
-### 📊 markdown rendering
+### markdown rendering
 
-full discord-flavored markdown → html:
+full discord-flavored markdown to html:
 - **bold**, *italic*, __underline__, ~~strikethrough~~
 - \`inline code\`, \`\`\`code blocks\`\`\`
 - > block quotes, ### headings
@@ -84,29 +75,30 @@ full discord-flavored markdown → html:
 - timestamps with relative formatting
 - [masked links](url)
 
-### 🔄 multi-account support
+### multi-account support
 
 - **quick account switcher** — avatar ring in sidebar, click to swap
 - **per-account settings** — different feature flags per account
-- **per-account proxy** — different ip per account
-- **background connections** — optional: keep inactive accounts connected for notification bridging
+- **per-account proxy** — different socks5 proxy per account
 
-### 🌐 gateway
+### gateway
 
 - **real-time events** — 40+ event types handled:
   - messages: create, update, delete, bulk delete, reactions
   - guilds: members, bans, roles, emojis
   - channels: create, update, delete, pins, threads
-  - voice: state updates, server updates
   - interactions, relationships, presence, typing
 - **auto-reconnect** — exponential backoff with jitter (up to 50 retries)
 - **resume** — uses saved session_id and sequence to resume without re-identifying
+- **proxied websocket** — gateway connections route through socks5 when proxy is enabled
 
-### 🤖 automated monitoring
+### proxy
 
-- **discord api change detection** — daily github action checks discord/discord-api-docs for changes, auto-creates issues
-- **build number auto-update** — every 6 hours, scrapes and updates the fallback build number
-- **ci/cd pipeline** — runs `cargo fmt`, `cargo clippy`, `cargo test` on every push/pr
+all traffic is routed through the proxy when enabled — both http rest api calls and the gateway websocket connection. configured at runtime from the settings panel:
+
+- **socks5 only** — simple host/port/optional auth
+- **runtime toggle** — enable/disable without restarting
+- **auto-reconnect** — gateway reconnects through the proxy automatically when settings change
 
 ## architecture
 
@@ -116,81 +108,56 @@ skunkcord/
 │   ├── main.rs                    # application entry point
 │   ├── lib.rs                     # library root, error types
 │   ├── build_number.rs            # dynamic build number scraping
-│   ├── client/                    # http client & api (22 submodules)
+│   ├── client/                    # http client & api
 │   │   ├── mod.rs                 # discordclient, rate limiting, telemetry blocking
 │   │   ├── api.rs                 # core rest api endpoints
 │   │   ├── session.rs             # authentication & sessions
 │   │   ├── account_switcher.rs    # multi-account management
-│   │   ├── attachments.rs        # file upload (multipart)
-│   │   ├── automod.rs            # auto-moderation rules
+│   │   ├── attachments.rs         # file upload (multipart)
 │   │   ├── captcha_interceptor.rs # captcha detection in http responses
-│   │   ├── cookies.rs            # cloudflare cookie management
-│   │   ├── forums.rs             # forum channel posts
-│   │   ├── interactions.rs      # slash commands & components
-│   │   ├── invites.rs            # invite endpoints
-│   │   ├── onboarding.rs         # guild onboarding
-│   │   ├── permissions.rs       # permission calculator
-│   │   ├── polls.rs             # poll creation & voting
-│   │   ├── reactions.rs         # reaction endpoints
-│   │   ├── read_states.rs       # unread tracking
-│   │   ├── scheduled_events.rs  # guild scheduled events
-│   │   ├── soundboard.rs        # soundboard sounds
-│   │   ├── stage.rs             # stage channel instances
-│   │   ├── threads.rs           # thread endpoints
-│   │   ├── timing.rs            # request jitter
-│   │   ├── typing.rs            # typing indicator throttle
-│   │   ├── user_settings.rs    # full user settings
-│   │   └── webhooks.rs          # webhook management
-│   ├── captcha/                  # hcaptcha enterprise handling
-│   │   ├── mod.rs               # detection, parsing, state machine
-│   │   └── widget.rs            # widget html generation with rqdata
-│   ├── features/                 # feature flags & client mod features (14 submodules)
-│   │   ├── flags.rs             # featureflags, presets, risk metadata
-│   │   ├── message_logger.rs    # deleted/edited message tracking
-│   │   ├── message_export.rs    # export logs to json/csv
-│   │   ├── show_hidden_channels.rs # permission-based visibility
-│   │   ├── clear_urls.rs        # tracking parameter removal
-│   │   ├── silent_messages.rs   # suppress notifications flag
-│   │   ├── no_reply_mention.rs  # no-ping replies
-│   │   ├── pin_dms.rs           # dm pinning
-│   │   ├── streamer_mode.rs    # streaming detection & redaction
-│   │   ├── emoji_picker.rs     # unicode emoji search & recent
-│   │   ├── gif_picker.rs       # tenor gif search
-│   │   ├── notifications.rs    # notification config & muting
-│   │   └── arrpc/              # rich presence (ipc + process scanner)
-│   ├── fingerprint/             # browser emulation
-│   │   ├── mod.rs               # chrome fingerprint generation
-│   │   ├── browser_data.rs     # browser constants
-│   │   └── super_properties.rs # x-super-properties header
-│   ├── gateway/                 # websocket gateway
-│   │   ├── mod.rs               # connection, heartbeat, reconnect
-│   │   ├── events.rs            # 40+ event types
-│   │   └── payloads.rs          # gateway payloads & opcodes
-│   ├── rendering/               # message display
-│   │   └── markdown.rs         # discord markdown → html
-│   ├── security/               # safety & privacy
-│   │   ├── link_preview.rs     # ssrf prevention, url safety
-│   │   └── content.rs         # sanitization, tracking removal
-│   ├── voice/                  # voice chat (5 submodules)
-│   │   ├── connection.rs      # voice connection state machine
-│   │   ├── crypto.rs          # audio encryption (nonce, packets)
-│   │   ├── fake_mute.rs       # fake mute/deafen state
-│   │   ├── gateway.rs         # voice gateway protocol
-│   │   └── udp.rs             # rtp packets, ip discovery
-│   ├── proxy/                  # proxy support
-│   │   └── mod.rs             # socks5, mullvad integration
-│   ├── storage/               # persistence
-│   │   └── mod.rs             # sessions, settings, cache
-│   └── ui/                    # qt/qml interface
-│       ├── mod.rs             # qobject types
-│       ├── login_window.rs    # web login & token extraction
-│       ├── main_window.rs    # main interface
-│       ├── web_view.rs       # webview controller
-│       └── styles.rs         # discord theme
+│   │   ├── cookies.rs             # cloudflare cookie management
+│   │   ├── interactions.rs        # slash commands & components
+│   │   ├── invites.rs             # invite endpoints
+│   │   ├── permissions.rs         # permission calculator
+│   │   ├── reactions.rs           # reaction endpoints
+│   │   ├── read_states.rs         # unread tracking
+│   │   ├── threads.rs             # thread endpoints
+│   │   ├── timing.rs              # request jitter
+│   │   └── typing.rs              # typing indicator throttle
+│   ├── captcha/                   # hcaptcha enterprise handling
+│   │   ├── mod.rs                 # detection, parsing, state machine
+│   │   └── widget.rs              # widget html generation with rqdata
+│   ├── features/                  # feature flags & client mod features
+│   │   ├── flags.rs               # featureflags, presets, risk metadata
+│   │   ├── message_logger.rs      # deleted/edited message tracking
+│   │   ├── clear_urls.rs          # tracking parameter removal
+│   │   ├── silent_messages.rs     # suppress notifications flag
+│   │   ├── emoji_picker.rs        # unicode emoji search & recent
+│   │   ├── gif_picker.rs          # tenor gif search
+│   │   └── notifications.rs       # notification config & muting
+│   ├── fingerprint/               # browser emulation
+│   │   ├── mod.rs                 # chrome fingerprint generation
+│   │   ├── browser_data.rs        # browser constants
+│   │   └── super_properties.rs    # x-super-properties header
+│   ├── gateway/                   # websocket gateway
+│   │   ├── mod.rs                 # connection, heartbeat, reconnect, socks5 proxy
+│   │   ├── events.rs              # 40+ event types
+│   │   └── payloads.rs            # gateway payloads & opcodes
+│   ├── rendering/                 # message display
+│   │   └── markdown.rs            # discord markdown to html
+│   ├── security/                  # safety & privacy
+│   │   ├── link_preview.rs        # ssrf prevention, url safety
+│   │   └── content.rs             # sanitization, tracking removal
+│   ├── proxy/                     # socks5 proxy support
+│   │   └── mod.rs                 # proxy config, url generation
+│   ├── storage/                   # persistence
+│   │   └── mod.rs                 # sessions, settings, proxy config
+│   └── ui/                        # qt/qml interface
+│       └── app_controller.rs      # qml-to-rust bridge
 ├── .github/workflows/
-│   ├── ci.yml                 # build, lint, test
-│   ├── api-watch.yml          # discord api change monitor
-│   └── build-number.yml       # build number auto-updater
+│   ├── ci.yml                     # build, lint, test
+│   ├── api-watch.yml              # discord api change monitor
+│   └── build-number.yml           # build number auto-updater
 └── Cargo.toml
 ```
 
@@ -213,7 +180,7 @@ sudo apt-get update && sudo apt-get install -y \
     libssl-dev pkg-config cmake g++
 ```
 
-#### build & test
+#### build & run
 
 ```bash
 cd skunkcord
@@ -226,7 +193,7 @@ export QMAKE=/usr/bin/qmake6
 # build
 cargo build --release
 
-# run tests (109 tests)
+# run tests
 cargo test
 
 # run
@@ -235,34 +202,28 @@ DISCORD_TOKEN="your_token" cargo run
 
 ### windows
 
-for windows builds, see **[docs/WINDOWS-BUILD.md](docs/WINDOWS-BUILD.md)** which covers:
-- 🤖 automated builds via github actions (easiest)
-- 💻 native windows build instructions
-- 🔧 cross-compilation from linux (advanced)
-- 📦 creating distributable packages
+for windows builds, see **[docs/WINDOWS-BUILD.md](docs/WINDOWS-BUILD.md)**.
 
 ## deployment
 
-### option 1: standalone bundle (recommended)
+### standalone bundle (recommended)
 
-self-contained package with qt libraries included - **no qt installation required** on target system:
+self-contained package with qt libraries included — no qt installation required on target system:
 
 ```bash
-# creates ~34mb package that works on any linux system
 ./package-bundle.sh
 tar -czf skunkcord-linux-standalone.tar.gz skunkcord-bundle/
 
-# on target machine (no qt needed!):
+# on target machine:
 tar -xzf skunkcord-linux-standalone.tar.gz
 cd skunkcord-bundle && ./skunkcord.sh
 ```
 
-### option 2: minimal package
+### minimal package
 
 small package requiring qt 6 on target system:
 
 ```bash
-# creates ~3.6mb package (requires qt installation)
 ./package.sh
 tar -czf skunkcord-linux.tar.gz skunkcord-release/
 
@@ -270,10 +231,6 @@ tar -czf skunkcord-linux.tar.gz skunkcord-release/
 tar -xzf skunkcord-linux.tar.gz
 cd skunkcord-release && ./skunkcord
 ```
-
-**comparison:**
-- **standalone**: 34mb, works everywhere, no dependencies → **best for distribution**
-- **minimal**: 3.6mb, requires qt installation → best for developers
 
 for detailed deployment instructions, see **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
 
@@ -287,35 +244,7 @@ every feature can be toggled in settings. use presets for quick configuration:
 | **standard** | safe mod features enabled | low |
 | **full** | everything enabled | high |
 
-see `src/features/flags.rs` for the complete list of 30 toggleable features with risk descriptions.
-
-## testing
-
-244 automated tests covering:
-- feature flag presets and risk levels
-- fingerprint generation and super properties
-- session management
-- cookie handling
-- request timing
-- build number regex parsing
-- hcaptcha detection, widget generation, title parsing
-- link preview safety (ssrf, spoofing)
-- content sanitization and url tracking removal
-- message logger cache operations
-- account switcher
-- voice encryption mode selection
-- markdown rendering (15 format types)
-- show hidden channels permissions
-- silent messages, pin dms, streamer mode
-- proxy url formatting
-- read state management
-- permission calculator (base + channel overwrites)
-- captcha interceptor (detection, extraction, retry headers)
-- typing indicator throttle
-- multipart file upload builder
-- poll creation and results deserialization
-- voice connection state machine
-- 41 integration tests via mock discord server (wiremock)
+see `src/features/flags.rs` for the complete list of toggleable features with risk descriptions.
 
 ## license
 
