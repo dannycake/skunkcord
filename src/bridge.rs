@@ -3188,6 +3188,9 @@ pub async fn handle_ui_action(
 
         UiAction::Logout => {
             client.logout().await;
+            if let Some(tx) = gateway_cmd.lock().await.as_ref() {
+                let _ = tx.send(GatewayCommand::Close).await;
+            }
             let _ = update_tx.send(UiUpdate::Disconnected);
         }
 
