@@ -33,8 +33,6 @@ pub mod event_type {
     pub const NEW_MESSAGE: i32 = 7;
     pub const MESSAGE_DELETED: i32 = 8;
     pub const MESSAGE_EDITED: i32 = 9;
-    pub const VOICE_STATE_CHANGED: i32 = 10;
-    pub const USER_SPEAKING: i32 = 11;
     pub const UNREAD_UPDATE: i32 = 12;
     pub const CAPTCHA_REQUIRED: i32 = 13;
     pub const CONNECTED: i32 = 14;
@@ -48,13 +46,8 @@ pub mod event_type {
     pub const STICKER_PACKS_LOADED: i32 = 22;
     pub const GUILD_EMOJIS_LOADED: i32 = 23;
     pub const MEMBERS_LOADED: i32 = 24;
-    pub const VOICE_PARTICIPANTS_CHANGED: i32 = 25;
-    pub const VOICE_CONNECTION_PROGRESS: i32 = 26;
-    pub const VOICE_SPEAKING_CHANGED: i32 = 27;
-    pub const VOICE_STATS: i32 = 28;
     pub const ERROR: i32 = 29;
     pub const MY_GUILD_PROFILE: i32 = 30;
-    pub const MULLVAD_SERVERS_LOADED: i32 = 31;
     pub const USER_PROFILE_LOADED: i32 = 32;
     pub const PRESENCE_UPDATED: i32 = 33;
     pub const MFA_REQUIRED: i32 = 34;
@@ -115,8 +108,6 @@ fn event_type_and_json(update: &UiUpdate) -> Option<(i32, String)> {
             event_type::MESSAGE_DELETED
         }
         UiUpdate::MessageEdited { .. } => event_type::MESSAGE_EDITED,
-        UiUpdate::VoiceStateChanged(_) => event_type::VOICE_STATE_CHANGED,
-        UiUpdate::UserSpeaking { .. } => event_type::USER_SPEAKING,
         UiUpdate::UnreadUpdate { .. } => event_type::UNREAD_UPDATE,
         UiUpdate::CaptchaRequired { .. } => event_type::CAPTCHA_REQUIRED,
         UiUpdate::MfaRequired { .. } => event_type::MFA_REQUIRED,
@@ -131,13 +122,8 @@ fn event_type_and_json(update: &UiUpdate) -> Option<(i32, String)> {
         UiUpdate::StickerPacksLoaded(_) => event_type::STICKER_PACKS_LOADED,
         UiUpdate::GuildEmojisLoaded(_) => event_type::GUILD_EMOJIS_LOADED,
         UiUpdate::MembersLoaded { .. } => event_type::MEMBERS_LOADED,
-        UiUpdate::VoiceParticipantsChanged { .. } => event_type::VOICE_PARTICIPANTS_CHANGED,
-        UiUpdate::VoiceConnectionProgress(_) => event_type::VOICE_CONNECTION_PROGRESS,
-        UiUpdate::VoiceSpeakingChanged { .. } => event_type::VOICE_SPEAKING_CHANGED,
-        UiUpdate::VoiceStats { .. } => event_type::VOICE_STATS,
         UiUpdate::Error(_) => event_type::ERROR,
         UiUpdate::MyGuildProfile { .. } => event_type::MY_GUILD_PROFILE,
-        UiUpdate::MullvadServersLoaded(_) => event_type::MULLVAD_SERVERS_LOADED,
         UiUpdate::UserProfileLoaded { .. } => event_type::USER_PROFILE_LOADED,
         UiUpdate::PresenceUpdated { .. } => event_type::PRESENCE_UPDATED,
         UiUpdate::PluginUiUpdated { .. } => event_type::PLUGIN_UI_UPDATED,
@@ -403,43 +389,6 @@ pub unsafe extern "C" fn skunkcord_remove_reaction(
     })
 }
 
-// ==================== Voice ====================
-
-/// Join a voice channel. guild_id can be null/empty for group DMs.
-#[no_mangle]
-pub unsafe extern "C" fn skunkcord_join_voice(guild_id: *const c_char, channel_id: *const c_char) -> i32 {
-    let g = c_str_to_string(guild_id);
-    send_action(UiAction::JoinVoice {
-        guild_id: if g.is_empty() { None } else { Some(g) },
-        channel_id: c_str_to_string(channel_id),
-    })
-}
-
-#[no_mangle]
-pub extern "C" fn skunkcord_leave_voice() -> i32 {
-    send_action(UiAction::LeaveVoice)
-}
-
-#[no_mangle]
-pub extern "C" fn skunkcord_toggle_mute() -> i32 {
-    send_action(UiAction::ToggleMute)
-}
-
-#[no_mangle]
-pub extern "C" fn skunkcord_toggle_deafen() -> i32 {
-    send_action(UiAction::ToggleDeafen)
-}
-
-#[no_mangle]
-pub extern "C" fn skunkcord_toggle_fake_mute() -> i32 {
-    send_action(UiAction::ToggleFakeMute)
-}
-
-#[no_mangle]
-pub extern "C" fn skunkcord_toggle_fake_deafen() -> i32 {
-    send_action(UiAction::ToggleFakeDeafen)
-}
-
 // ==================== Profile / status ====================
 
 #[no_mangle]
@@ -672,11 +621,6 @@ pub extern "C" fn skunkcord_load_sticker_packs() -> i32 {
 #[no_mangle]
 pub unsafe extern "C" fn skunkcord_load_guild_emojis(guild_id: *const c_char) -> i32 {
     send_action(UiAction::LoadGuildEmojis(c_str_to_string(guild_id)))
-}
-
-#[no_mangle]
-pub extern "C" fn skunkcord_get_mullvad_servers() -> i32 {
-    send_action(UiAction::GetMullvadServers)
 }
 
 fn send_action(action: UiAction) -> i32 {

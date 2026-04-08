@@ -255,28 +255,6 @@ impl DiscordClient {
             .unwrap_or(false)
     }
 
-    /// Disable proxy (rebuilds client without proxy)
-    pub async fn disable_proxy(&self) -> Result<()> {
-        if let Some(mut config) = self.proxy_config.read().await.clone() {
-            config.enabled = false;
-            self.set_proxy(Some(config)).await
-        } else {
-            Ok(())
-        }
-    }
-
-    /// Enable proxy with current configuration (rebuilds client with proxy)
-    pub async fn enable_proxy(&self) -> Result<()> {
-        if let Some(mut config) = self.proxy_config.read().await.clone() {
-            config.enabled = true;
-            self.set_proxy(Some(config)).await
-        } else {
-            Err(DiscordError::Proxy(
-                "No proxy configuration set".to_string(),
-            ))
-        }
-    }
-
     /// Set the authentication token
     pub async fn set_token(&self, token: String) {
         // Strip "Bot " prefix if someone passes it — we only do user accounts

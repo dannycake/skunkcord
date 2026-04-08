@@ -14,7 +14,6 @@ use skunkcord::features::flags::FeatureFlags;
 use skunkcord::plugins::message_logger::MessageCache;
 use skunkcord::rendering::markdown::parse_markdown;
 use skunkcord::security::content::strip_tracking_params;
-use skunkcord::voice::udp::RtpHeader;
 
 // ==================== Message Cache Stress ====================
 
@@ -87,19 +86,6 @@ fn test_message_cache_delete_preserves() {
     }
     // Deleted messages should survive eviction
     assert!(cache.deleted_count() >= 20);
-}
-
-// ==================== RTP Sequence Wrapping ====================
-
-#[test]
-fn test_rtp_full_sequence_cycle() {
-    let mut header = RtpHeader::new(12345);
-    // Run through an entire u16 cycle
-    for _ in 0..=u16::MAX as u32 {
-        header.advance(960);
-    }
-    // Should have wrapped back to 0
-    assert_eq!(header.sequence, 0);
 }
 
 // ==================== Permission Edge Cases ====================

@@ -8,12 +8,12 @@
 //! directly (select_guild, select_channel, send_message, etc.), which
 //! are forwarded to the async backend via a tokio channel.
 
-use crate::bridge::{ChannelInfo, DmChannelInfo, GuildInfo, LoginRequest, MemberInfo, MessageInfo, ReactionInfo, RelationshipInfo, RoleDisplayInfo, UiAction, UiUpdate, VoiceParticipant};
+use crate::bridge::{ChannelInfo, DmChannelInfo, GuildInfo, LoginRequest, MemberInfo, MessageInfo, ReactionInfo, RelationshipInfo, RoleDisplayInfo, UiAction, UiUpdate};
 use crate::captcha::widget;
 use crate::captcha::CaptchaChallenge;
 use crate::plugins;
 use crate::plugins::manifest::{PluginUiButton, PluginUiModal};
-use crate::storage::{ProxyMode, Storage};
+use crate::storage::Storage;
 use qmetaobject::prelude::*;
 use std::collections::HashMap;
 use std::sync::mpsc::{Receiver, Sender};
@@ -43,8 +43,6 @@ pub struct AppController {
     typing_display: qt_property!(QString; NOTIFY state_changed),
     /// Typing users as JSON array of { name, roleColor } for role-colored display
     typing_display_json: qt_property!(QString; NOTIFY state_changed),
-    /// Voice connection state: "disconnected", "connecting_gateway", "discovering", "connected", "failed:..."
-    voice_connection_state: qt_property!(QString; NOTIFY state_changed),
     /// Whether MFA code input should be shown (credential login)
     mfa_required: qt_property!(bool; NOTIFY state_changed),
     /// Generated captcha widget HTML for WebView (when captcha_visible)
@@ -91,14 +89,6 @@ pub struct AppController {
     consume_message_deletions: qt_method!(fn(&mut self) -> QString),
     /// Consume more (older) messages for pagination (returns JSON object with messages + hasMore)
     consume_more_messages: qt_method!(fn(&mut self) -> QString),
-    /// Consume pending voice state change (returns state string or empty)
-    consume_voice_state: qt_method!(fn(&mut self) -> QString),
-    /// Consume voice channel participants (returns JSON object { channelId, participants } or empty)
-    consume_voice_participants: qt_method!(fn(&mut self) -> QString),
-    /// Consume voice connection stats (returns JSON object with ping, encryption, endpoint, etc. or empty)
-    consume_voice_stats: qt_method!(fn(&mut self) -> QString),
-    /// Consume speaking state changes (returns JSON array of { userId, speaking } or empty)
-    consume_speaking_users: qt_method!(fn(&mut self) -> QString),
     /// Search GIFs (empty string = trending)
     search_gifs: qt_method!(fn(&mut self, query: QString)),
     /// Consume pending GIF results (returns JSON array)
@@ -198,26 +188,8 @@ pub struct AppController {
     set_status: qt_method!(fn(&mut self, status: QString)),
     /// Set custom status text (empty to clear)
     set_custom_status: qt_method!(fn(&mut self, text: QString)),
-    /// Join a voice channel
-    join_voice: qt_method!(fn(&mut self, guild_id: QString, channel_id: QString)),
-    /// Leave voice channel
-    leave_voice: qt_method!(fn(&mut self)),
-    /// Toggle mute
-    toggle_mute: qt_method!(fn(&mut self)),
-    /// Toggle deafen
-    toggle_deafen: qt_method!(fn(&mut self)),
-    /// Toggle fake mute (appear muted but still receive)
-    toggle_fake_mute: qt_method!(fn(&mut self)),
-    /// Toggle fake deafen (appear deafened but still hear)
-    toggle_fake_deafen: qt_method!(fn(&mut self)),
-    /// Update voice state with mute/deaf flags (sends op 4 with current flags)
-    update_voice_state: qt_method!(fn(&mut self, guild_id: QString, channel_id: QString, self_mute: bool, self_deaf: bool)),
-    /// Request Mullvad server list
-    load_mullvad_servers: qt_method!(fn(&mut self)),
-    /// Consume Mullvad servers (returns JSON array)
-    consume_mullvad_servers: qt_method!(fn(&mut self) -> QString),
     /// Set proxy configuration
-    set_proxy_settings: qt_method!(fn(&mut self, enabled: bool, mode: QString, mullvad_country: QString, mullvad_city: QString, mullvad_server: QString, custom_host: QString, custom_port: i32)),
+    set_proxy_settings: qt_method!(fn(&mut self, enabled: bool, host: QString, port: i32, username: QString, password: QString)),
     /// Get current proxy settings (returns JSON)
     get_proxy_settings: qt_method!(fn(&self) -> QString),
     /// Fetch full user profile for the profile popup (guild_id empty for DMs)
@@ -287,13 +259,6 @@ pub struct AppController {
     )>,
     pending_more_messages: Option<(String, Vec<MessageInfo>, bool)>, // (channel_id, messages, has_more)
     pending_typing_events: Vec<TypingEvent>,
-    pending_voice_state: Option<String>,
-    /// (channel_id, participants) from VoiceParticipantsChanged
-    pending_voice_participants: Option<(String, Vec<VoiceParticipant>)>,
-    /// Voice stats from VoiceStats update
-    pending_voice_stats: Option<(u32, String, String, u32, u64, u64, u64)>,
-    /// (user_id, speaking) deltas from VoiceSpeakingChanged
-    pending_speaking_changes: Vec<(String, bool)>,
     pending_gifs: Vec<crate::features::gif_picker::GifResult>,
     pending_pins: Option<Vec<MessageInfo>>,
     /// (guild_id, members) from MembersLoaded
@@ -306,8 +271,6 @@ pub struct AppController {
     pending_guild_emojis: Option<Vec<crate::client::GuildEmoji>>,
     /// (channel_id, guild_id_opt, has_unread, mention_count) from UnreadUpdate
     pending_unread_updates: Vec<(String, Option<String>, bool, u32)>,
-    /// Pending Mullvad server list (JSON string)
-    mullvad_servers_buf: Vec<String>,
     /// Current channel ID for filtering typing display
     current_channel_for_typing: String,
     /// Pending user profile (curated JSON) from UserProfileLoaded
@@ -881,54 +844,6 @@ impl AppController {
         self.send_action(UiAction::SetCustomStatus(opt));
     }
 
-    fn join_voice(&mut self, guild_id: QString, channel_id: QString) {
-        let gid = guild_id.to_string();
-        let guild = if gid.is_empty() { None } else { Some(gid) };
-        self.send_action(UiAction::JoinVoice {
-            guild_id: guild,
-            channel_id: channel_id.to_string(),
-        });
-    }
-
-    fn leave_voice(&mut self) {
-        self.send_action(UiAction::LeaveVoice);
-    }
-
-    fn toggle_mute(&mut self) {
-        self.send_action(UiAction::ToggleMute);
-    }
-
-    fn toggle_deafen(&mut self) {
-        self.send_action(UiAction::ToggleDeafen);
-    }
-
-    fn toggle_fake_mute(&mut self) {
-        self.send_action(UiAction::ToggleFakeMute);
-    }
-
-    fn toggle_fake_deafen(&mut self) {
-        self.send_action(UiAction::ToggleFakeDeafen);
-    }
-
-    fn update_voice_state(
-        &mut self,
-        guild_id: QString,
-        channel_id: QString,
-        self_mute: bool,
-        self_deaf: bool,
-    ) {
-        // Send a direct voice state update with explicit flags
-        let gid = guild_id.to_string();
-        let guild = if gid.is_empty() { None } else { Some(gid) };
-        self.send_action(UiAction::JoinVoice {
-            guild_id: guild,
-            channel_id: channel_id.to_string(),
-        });
-        // The mute/deaf flags are managed via a separate gateway command;
-        // for now the flags are sent as part of join and the QML manages state
-        let _ = (self_mute, self_deaf); // silence unused warnings — flags handled by QML
-    }
-
     /// Update the typing display text and JSON from pending events for current channel
     fn update_typing_display(&mut self) {
         let events: Vec<&TypingEvent> = self
@@ -1178,37 +1093,6 @@ impl AppController {
                     });
                     typing_changed = true;
                 }
-                UiUpdate::VoiceStateChanged(state_str) => {
-                    self.pending_voice_state = Some(state_str);
-                }
-                UiUpdate::VoiceParticipantsChanged { channel_id, participants } => {
-                    self.pending_voice_participants = Some((channel_id, participants));
-                }
-                UiUpdate::VoiceConnectionProgress(s) => {
-                    self.voice_connection_state = QString::from(s.as_str());
-                }
-                UiUpdate::VoiceSpeakingChanged { user_id, speaking } => {
-                    self.pending_speaking_changes.push((user_id, speaking));
-                }
-                UiUpdate::VoiceStats {
-                    ping_ms,
-                    encryption_mode,
-                    endpoint,
-                    ssrc,
-                    packets_sent,
-                    packets_received,
-                    connection_duration_secs,
-                } => {
-                    self.pending_voice_stats = Some((
-                        ping_ms,
-                        encryption_mode,
-                        endpoint,
-                        ssrc,
-                        packets_sent,
-                        packets_received,
-                        connection_duration_secs,
-                    ));
-                }
                 UiUpdate::GifsLoaded(gifs) => {
                     self.pending_gifs = gifs;
                 }
@@ -1234,9 +1118,6 @@ impl AppController {
                 } => {
                     self.pending_unread_updates
                         .push((channel_id, guild_id.clone(), has_unread, mention_count));
-                }
-                UiUpdate::MullvadServersLoaded(json) => {
-                    self.mullvad_servers_buf.push(json);
                 }
                 UiUpdate::UserProfileLoaded {
                     profile_json,
@@ -1472,69 +1353,6 @@ impl AppController {
         QString::from(serde_json::to_string(&result).unwrap_or_default().as_str())
     }
 
-    fn consume_voice_state(&mut self) -> QString {
-        match self.pending_voice_state.take() {
-            Some(state) => QString::from(state.as_str()),
-            None => QString::default(),
-        }
-    }
-
-    fn consume_voice_participants(&mut self) -> QString {
-        let Some((channel_id, participants)) = self.pending_voice_participants.take() else {
-            return QString::default();
-        };
-        let arr: Vec<serde_json::Value> = participants
-            .into_iter()
-            .map(|p| {
-                serde_json::json!({
-                    "userId": p.user_id,
-                    "username": p.username,
-                    "avatarUrl": p.avatar_url,
-                    "selfMute": p.self_mute,
-                    "selfDeaf": p.self_deaf,
-                    "serverMute": p.server_mute,
-                    "serverDeaf": p.server_deaf,
-                    "speaking": p.speaking,
-                    "selfVideo": p.self_video,
-                    "selfStream": p.self_stream,
-                    "suppress": p.suppress,
-                })
-            })
-            .collect();
-        let obj = serde_json::json!({ "channelId": channel_id, "participants": arr });
-        QString::from(serde_json::to_string(&obj).unwrap_or_default().as_str())
-    }
-
-    fn consume_voice_stats(&mut self) -> QString {
-        let Some((ping_ms, encryption_mode, endpoint, ssrc, packets_sent, packets_received, connection_duration_secs)) =
-            self.pending_voice_stats.take()
-        else {
-            return QString::default();
-        };
-        let obj = serde_json::json!({
-            "pingMs": ping_ms,
-            "encryptionMode": encryption_mode,
-            "endpoint": endpoint,
-            "ssrc": ssrc,
-            "packetsSent": packets_sent,
-            "packetsReceived": packets_received,
-            "connectionDurationSecs": connection_duration_secs,
-        });
-        QString::from(serde_json::to_string(&obj).unwrap_or_default().as_str())
-    }
-
-    fn consume_speaking_users(&mut self) -> QString {
-        if self.pending_speaking_changes.is_empty() {
-            return QString::default();
-        }
-        let arr: Vec<serde_json::Value> = self
-            .pending_speaking_changes
-            .drain(..)
-            .map(|(user_id, speaking)| serde_json::json!({ "userId": user_id, "speaking": speaking }))
-            .collect();
-        QString::from(serde_json::to_string(&arr).unwrap_or_default().as_str())
-    }
-
     fn search_gifs(&mut self, query: QString) {
         self.send_action(UiAction::SearchGifs(query.to_string()));
     }
@@ -1626,83 +1444,44 @@ impl AppController {
         QString::from(serde_json::to_string(&arr).unwrap_or_default().as_str())
     }
 
-    fn load_mullvad_servers(&mut self) {
-        self.send_action(UiAction::GetMullvadServers);
-    }
-
-    fn consume_mullvad_servers(&mut self) -> QString {
-        let json = if self.mullvad_servers_buf.is_empty() {
-            String::new()
-        } else {
-            self.mullvad_servers_buf.remove(0)
-        };
-        QString::from(json.as_str())
-    }
-
     fn set_proxy_settings(
         &mut self,
         enabled: bool,
-        mode: QString,
-        mullvad_country: QString,
-        mullvad_city: QString,
-        mullvad_server: QString,
-        custom_host: QString,
-        custom_port: i32,
+        host: QString,
+        port: i32,
+        username: QString,
+        password: QString,
     ) {
-        let mode_s = mode.trimmed().to_string();
-        let mullvad_country = if mullvad_country.trimmed().is_empty() {
-            None
-        } else {
-            Some(mullvad_country.trimmed().to_string())
+        let host = {
+            let s = host.trimmed().to_string();
+            if s.is_empty() { "127.0.0.1".to_string() } else { s }
         };
-        let mullvad_city = if mullvad_city.trimmed().is_empty() {
-            None
-        } else {
-            Some(mullvad_city.trimmed().to_string())
+        let port = if port > 0 { port as u16 } else { 1080 };
+        let username = {
+            let s = username.trimmed().to_string();
+            if s.is_empty() { None } else { Some(s) }
         };
-        let mullvad_server = if mullvad_server.trimmed().is_empty() {
-            None
-        } else {
-            Some(mullvad_server.trimmed().to_string())
-        };
-        let custom_host = if custom_host.trimmed().is_empty() {
-            None
-        } else {
-            Some(custom_host.trimmed().to_string())
-        };
-        let custom_port = if custom_port > 0 {
-            Some(custom_port as u16)
-        } else {
-            None
+        let password = {
+            let s = password.trimmed().to_string();
+            if s.is_empty() { None } else { Some(s) }
         };
 
-        // Persist to storage immediately so settings are saved even if user never logs in
         if let Ok(storage) = Storage::new() {
             let mut settings = storage.load_settings().unwrap_or_default();
             settings.proxy_settings.enabled = enabled;
-            settings.proxy_settings.mode = if mode_s == "mullvad" {
-                ProxyMode::Mullvad
-            } else {
-                ProxyMode::Custom
-            };
-            settings.proxy_settings.mullvad_country = mullvad_country.clone();
-            settings.proxy_settings.mullvad_city = mullvad_city.clone();
-            settings.proxy_settings.mullvad_server = mullvad_server.clone();
-            if let (Some(host), Some(port)) = (custom_host.clone(), custom_port) {
-                settings.proxy_settings.custom_host = host;
-                settings.proxy_settings.custom_port = port;
-            }
+            settings.proxy_settings.host = host.clone();
+            settings.proxy_settings.port = port;
+            settings.proxy_settings.username = username.clone();
+            settings.proxy_settings.password = password.clone();
             let _ = storage.save_settings(&settings);
         }
 
         self.send_action(UiAction::SetProxySettings {
             enabled,
-            mode: mode_s,
-            mullvad_country,
-            mullvad_city,
-            mullvad_server,
-            custom_host,
-            custom_port,
+            host,
+            port,
+            username,
+            password,
         });
     }
 
@@ -1711,18 +1490,12 @@ impl AppController {
             .ok()
             .and_then(|s| s.load_settings().ok())
             .unwrap_or_default();
-        let mode_str = match settings.proxy_settings.mode {
-            ProxyMode::Mullvad => "mullvad",
-            ProxyMode::Custom => "custom",
-        };
         let json = serde_json::json!({
             "enabled": settings.proxy_settings.enabled,
-            "mode": mode_str,
-            "mullvad_country": settings.proxy_settings.mullvad_country,
-            "mullvad_city": settings.proxy_settings.mullvad_city,
-            "mullvad_server": settings.proxy_settings.mullvad_server,
-            "custom_host": settings.proxy_settings.custom_host,
-            "custom_port": settings.proxy_settings.custom_port,
+            "host": settings.proxy_settings.host,
+            "port": settings.proxy_settings.port,
+            "username": settings.proxy_settings.username,
+            "password": settings.proxy_settings.password,
         });
         QString::from(serde_json::to_string(&json).unwrap_or_default().as_str())
     }

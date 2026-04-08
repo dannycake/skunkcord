@@ -19,10 +19,7 @@ use crate::client::permissions::{
     compute_base_permissions, compute_channel_permissions, has_permission, permission_names,
     PermOverwrite,
 };
-use crate::proxy::MullvadServerList;
-use crate::storage::{ProxyMode, Storage};
-use crate::voice::connection::VoiceConnection;
-use crate::voice::voice_ws::{connect_voice_gateway, VoiceGatewayCommand, VoiceGatewayEvent};
+use crate::storage::Storage;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::{broadcast, mpsc, RwLock};
@@ -106,21 +103,6 @@ pub enum UiAction {
         message_id: String,
         emoji: String,
     },
-    /// User wants to join a voice channel
-    JoinVoice {
-        guild_id: Option<String>,
-        channel_id: String,
-    },
-    /// User wants to leave voice
-    LeaveVoice,
-    /// User toggled mute
-    ToggleMute,
-    /// User toggled deafen
-    ToggleDeafen,
-    /// User toggled fake mute
-    ToggleFakeMute,
-    /// Toggle fake deafen (appear deafened but still hear)
-    ToggleFakeDeafen,
     /// User changed status
     SetStatus(String),
     /// User changed custom status
@@ -170,8 +152,6 @@ pub enum UiAction {
     LoadStickerPacks,
     /// Load guild emojis for the current guild (for emoji picker "Server" section)
     LoadGuildEmojis(String),
-    /// Request available Mullvad servers
-    GetMullvadServers,
     /// Set plugin enabled state
     SetPluginEnabled { plugin_id: String, enabled: bool },
     /// Install plugin from git repository URL
@@ -191,15 +171,13 @@ pub enum UiAction {
         modal_id: String,
         fields: std::collections::HashMap<String, String>,
     },
-    /// Set proxy configuration (enabled, mode, mullvad_country, mullvad_city, mullvad_server, custom)
+    /// Set proxy configuration
     SetProxySettings {
         enabled: bool,
-        mode: String,
-        mullvad_country: Option<String>,
-        mullvad_city: Option<String>,
-        mullvad_server: Option<String>,
-        custom_host: Option<String>,
-        custom_port: Option<u16>,
+        host: String,
+        port: u16,
+        username: Option<String>,
+        password: Option<String>,
     },
     /// User wants to leave a guild
     LeaveGuild(String),
@@ -251,10 +229,6 @@ pub enum UiUpdate {
         message_id: String,
         new_content: String,
     },
-    /// Voice connection state changed
-    VoiceStateChanged(String),
-    /// User started/stopped speaking
-    UserSpeaking { user_id: String, speaking: bool },
     /// Unread count changed for a channel (guild_id empty for DMs)
     UnreadUpdate {
         channel_id: String,
@@ -318,25 +292,6 @@ pub enum UiUpdate {
         guild_id: String,
         members: Vec<MemberInfo>,
     },
-    /// Voice channel participants updated (who is in the channel, mute/deaf/speaking)
-    VoiceParticipantsChanged {
-        channel_id: String,
-        participants: Vec<VoiceParticipant>,
-    },
-    /// Voice connection state progress (e.g. "connecting_gateway", "discovering", "connected")
-    VoiceConnectionProgress(String),
-    /// A user started or stopped speaking in voice
-    VoiceSpeakingChanged { user_id: String, speaking: bool },
-    /// Voice connection statistics for dev panel
-    VoiceStats {
-        ping_ms: u32,
-        encryption_mode: String,
-        endpoint: String,
-        ssrc: u32,
-        packets_sent: u64,
-        packets_received: u64,
-        connection_duration_secs: u64,
-    },
     /// Error to display
     Error(String),
     /// Current user's profile in the selected guild (roles, nick)
@@ -345,8 +300,6 @@ pub enum UiUpdate {
         nick: Option<String>,
         roles: Vec<RoleDisplayInfo>,
     },
-    /// Mullvad server list loaded (JSON array of countries with cities)
-    MullvadServersLoaded(String),
     /// User profile loaded (curated profile_json for UI, raw_json for developer copy)
     UserProfileLoaded {
         user_id: String,
@@ -444,22 +397,6 @@ pub struct MemberInfo {
     pub bot: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub premium_type: Option<u8>,
-}
-
-/// Voice channel participant for UI (from VOICE_STATE_UPDATE + speaking)
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct VoiceParticipant {
-    pub user_id: String,
-    pub username: String,
-    pub avatar_url: String,
-    pub self_mute: bool,
-    pub self_deaf: bool,
-    pub server_mute: bool,
-    pub server_deaf: bool,
-    pub speaking: bool,
-    pub self_video: bool,
-    pub self_stream: bool,
-    pub suppress: bool,
 }
 
 /// Simplified DM channel info for UI
@@ -1540,123 +1477,6 @@ impl BackendBridge {
                 self.bridge_cache.lock().await.presence.insert(user_id.clone(), status.clone());
                 let _ = self.update_tx.send(UiUpdate::PresenceUpdated { user_id, status });
             }
-            GatewayEvent::VoiceServerUpdate(ev) => {
-                let endpoint = ev.endpoint.clone().unwrap_or_default();
-                let token = ev.token.clone();
-                // #region agent log
-                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/skunkcord/.cursor/debug.log") {
-                    use std::io::Write;
-                    let _ = writeln!(f, "{}", serde_json::json!({"hypothesisId":"A","location":"bridge:VoiceServerUpdate","message":"VoiceServerUpdate received","data":{"hasToken":!token.is_empty(),"hasEndpoint":!endpoint.is_empty(),"endpointLen":endpoint.len()}}));
-                }
-                // #endregion
-                if !token.is_empty() {
-                    let mut cache = self.bridge_cache.lock().await;
-                    cache.voice_server_token = Some(token);
-                    if !endpoint.is_empty() {
-                        cache.voice_server_endpoint = Some(endpoint);
-                    }
-                    drop(cache);
-                    self.try_start_voice_connection().await;
-                }
-            }
-            GatewayEvent::VoiceStateUpdate(vs) => {
-                let my_user_id = self.bridge_cache.lock().await.my_user_id.clone();
-                let is_self = vs.user_id == my_user_id;
-
-                if is_self {
-                    // #region agent log
-                    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/skunkcord/.cursor/debug.log") {
-                        use std::io::Write;
-                        let _ = writeln!(f, "{}", serde_json::json!({"hypothesisId":"B","location":"bridge:VoiceStateUpdate(self)","message":"VoiceStateUpdate self","data":{"sessionIdLen":vs.session_id.len(),"channelId":vs.channel_id.as_deref().unwrap_or("")}}));
-                    }
-                    // #endregion
-                    let mut cache = self.bridge_cache.lock().await;
-                    cache.voice_session_id = Some(vs.session_id.clone());
-                    if vs.channel_id.is_none() {
-                        cache.voice_connection = None;
-                        cache.voice_session_id = None;
-                        cache.voice_channel_id = None;
-                        cache.voice_guild_id = None;
-                        cache.voice_server_token = None;
-                        cache.voice_server_endpoint = None;
-                    }
-                    drop(cache);
-                    self.try_start_voice_connection().await;
-                }
-
-                let (username, avatar_url) = {
-                    let cache = self.bridge_cache.lock().await;
-                    let guild_id = vs.guild_id.as_deref().unwrap_or("");
-                    let members = cache.members.get(guild_id);
-                    let info = members.and_then(|m| m.iter().find(|x| x.user_id == vs.user_id));
-                    let username = info
-                        .and_then(|x| x.display_name.as_deref().or(Some(x.username.as_str())))
-                        .unwrap_or("Unknown")
-                        .to_string();
-                    let avatar_url = info
-                        .and_then(|x| x.avatar_url.as_deref())
-                        .unwrap_or("")
-                        .to_string();
-                    (username, avatar_url)
-                };
-
-                let participant = VoiceParticipant {
-                    user_id: vs.user_id.clone(),
-                    username,
-                    avatar_url,
-                    self_mute: vs.self_mute,
-                    self_deaf: vs.self_deaf,
-                    server_mute: vs.mute,
-                    server_deaf: vs.deaf,
-                    speaking: false,
-                    self_video: vs.self_video,
-                    self_stream: vs.self_stream.unwrap_or(false),
-                    suppress: vs.suppress,
-                };
-
-                let mut cache = self.bridge_cache.lock().await;
-                if let Some(ref cid) = vs.channel_id {
-                    for (_, participants) in cache.voice_channel_members.iter_mut() {
-                        participants.retain(|p| p.user_id != vs.user_id);
-                    }
-                    let list = cache.voice_channel_members.entry(cid.clone()).or_default();
-                    if let Some(pos) = list.iter().position(|p| p.user_id == vs.user_id) {
-                        list[pos] = participant.clone();
-                    } else {
-                        list.push(participant.clone());
-                    }
-                    let participants = list.clone();
-                    drop(cache);
-                    let _ = self.update_tx.send(UiUpdate::VoiceParticipantsChanged {
-                        channel_id: cid.clone(),
-                        participants,
-                    });
-                } else {
-                    let mut to_send: Option<(String, Vec<VoiceParticipant>)> = None;
-                    for (cid, list) in cache.voice_channel_members.iter_mut() {
-                        if list.iter().any(|p| p.user_id == vs.user_id) {
-                            list.retain(|p| p.user_id != vs.user_id);
-                            to_send = Some((cid.clone(), list.clone()));
-                            break;
-                        }
-                    }
-                    if let Some((cid, participants)) = to_send {
-                        drop(cache);
-                        let _ = self.update_tx.send(UiUpdate::VoiceParticipantsChanged {
-                            channel_id: cid,
-                            participants,
-                        });
-                    } else {
-                        drop(cache);
-                    }
-                }
-
-                let state_str = if vs.channel_id.is_some() { "connected" } else { "disconnected" };
-                let _ = self.update_tx.send(UiUpdate::VoiceStateChanged(format!(
-                    "User {} {}",
-                    vs.user_id, state_str
-                )));
-            }
             GatewayEvent::Raw {
                 event_type,
                 data,
@@ -2151,179 +1971,6 @@ impl BackendBridge {
             }
         }
     }
-
-    /// If we have session_id, channel_id, token, and endpoint, create VoiceConnection and spawn the voice gateway driver.
-    async fn try_start_voice_connection(&self) {
-        let cache = self.bridge_cache.lock().await;
-        let has_conn = cache.voice_connection.is_some();
-        let has_session = cache.voice_session_id.as_ref().map_or(false, |s| !s.is_empty());
-        let has_channel = cache.voice_channel_id.as_ref().map_or(false, |c| !c.is_empty());
-        let has_token = cache.voice_server_token.as_ref().map_or(false, |t| !t.is_empty());
-        let has_endpoint = cache.voice_server_endpoint.as_ref().map_or(false, |e| !e.is_empty());
-        // #region agent log
-        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/skunkcord/.cursor/debug.log") {
-            use std::io::Write;
-            let _ = writeln!(f, "{}", serde_json::json!({"hypothesisId":"D","location":"bridge:try_start_voice_connection","message":"try_start_voice_connection","data":{"hasConn":has_conn,"hasSession":has_session,"hasChannel":has_channel,"hasToken":has_token,"hasEndpoint":has_endpoint}}));
-        }
-        // #endregion
-        if cache.voice_connection.is_some() {
-            return;
-        }
-        let session_id = match &cache.voice_session_id {
-            Some(s) if !s.is_empty() => s.clone(),
-            _ => return,
-        };
-        let channel_id = match &cache.voice_channel_id {
-            Some(c) if !c.is_empty() => c.clone(),
-            _ => return,
-        };
-        let token = match &cache.voice_server_token {
-            Some(t) if !t.is_empty() => t.clone(),
-            _ => return,
-        };
-        let endpoint = match &cache.voice_server_endpoint {
-            Some(e) if !e.is_empty() => e.clone(),
-            _ => return,
-        };
-        let guild_id = cache.voice_guild_id.clone();
-        let my_user_id = cache.my_user_id.clone();
-        drop(cache);
-
-        let conn = VoiceConnection::new(guild_id, channel_id.clone(), my_user_id);
-        conn.on_voice_state_update(&session_id).await;
-        conn.on_voice_server_update(&token, Some(&endpoint)).await;
-
-        let mut cache = self.bridge_cache.lock().await;
-        cache.voice_connection = Some(Arc::new(conn));
-        cache.voice_server_token = None;
-        cache.voice_server_endpoint = None;
-        let voice_conn = cache.voice_connection.as_ref().unwrap().clone();
-        drop(cache);
-
-        let _ = self.update_tx.send(UiUpdate::VoiceConnectionProgress("connecting_gateway".to_string()));
-        let info = voice_conn.info().await;
-        // #region agent log
-        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/skunkcord/.cursor/debug.log") {
-            use std::io::Write;
-            let _ = writeln!(f, "{}", serde_json::json!({"hypothesisId":"C","location":"bridge:connect_voice_gateway","message":"calling connect_voice_gateway","data":{"endpoint":info.endpoint}}));
-        }
-        // #endregion
-        let (event_rx, cmd_tx) = match connect_voice_gateway(&info).await {
-            Ok(pair) => pair,
-            Err(e) => {
-                // #region agent log
-                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/skunkcord/.cursor/debug.log") {
-                    use std::io::Write;
-                    let _ = writeln!(f, "{}", serde_json::json!({"hypothesisId":"C","location":"bridge:connect_voice_gateway","message":"connect_voice_gateway failed","data":{"err":e.to_string()}}));
-                }
-                // #endregion
-                tracing::error!("Voice gateway connect failed: {}", e);
-                let _ = self.update_tx.send(UiUpdate::VoiceConnectionProgress(format!("failed:{}", e)));
-                let mut cache = self.bridge_cache.lock().await;
-                cache.voice_connection = None;
-                return;
-            }
-        };
-        let update_tx = self.update_tx.clone();
-        let bridge_cache = self.bridge_cache.clone();
-        tokio::spawn(async move {
-            run_voice_gateway_driver(voice_conn, event_rx, cmd_tx, update_tx, bridge_cache).await;
-        });
-    }
-}
-
-/// Drives the voice gateway event loop: Ready -> IP discovery -> Select Protocol -> SessionDescription -> Connected.
-async fn run_voice_gateway_driver(
-    conn: Arc<VoiceConnection>,
-    mut event_rx: broadcast::Receiver<VoiceGatewayEvent>,
-    cmd_tx: mpsc::Sender<VoiceGatewayCommand>,
-    update_tx: broadcast::Sender<UiUpdate>,
-    _bridge_cache: SharedBridgeCache,
-) {
-    let mut cmd_tx = Some(cmd_tx);
-    while let Ok(ev) = event_rx.recv().await {
-        // #region agent log
-        let ev_name = match &ev { VoiceGatewayEvent::Ready(_) => "Ready", VoiceGatewayEvent::SessionDescription(_) => "SessionDescription", VoiceGatewayEvent::Closed => "Closed", _ => "Other" };
-        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/skunkcord/.cursor/debug.log") {
-            use std::io::Write;
-            let _ = writeln!(f, "{}", serde_json::json!({"hypothesisId":"C","location":"bridge:run_voice_gateway_driver","message":"voice gateway event","data":{"ev":ev_name}}));
-        }
-        // #endregion
-        match ev {
-            VoiceGatewayEvent::Ready(ready) => {
-                let _ = update_tx.send(UiUpdate::VoiceConnectionProgress("discovering".to_string()));
-                conn.on_voice_ready(&ready).await;
-                let server_ip = ready.ip.clone();
-                let server_port = ready.port;
-                let conn_clone = conn.clone();
-                let update_tx_clone = update_tx.clone();
-                let tx_for_spawn = match &cmd_tx {
-                    Some(t) => t.clone(),
-                    None => continue,
-                };
-                tokio::spawn(async move {
-                    match conn_clone.perform_ip_discovery(&server_ip, server_port).await {
-                        Ok((my_ip, my_port)) => {
-                            conn_clone.on_ip_discovered(my_ip.clone(), my_port).await;
-                            let _ = update_tx_clone.send(UiUpdate::VoiceConnectionProgress("selecting_protocol".to_string()));
-                            let mode = conn_clone.encryption_mode.read().await.clone().unwrap_or_else(|| "xsalsa20_poly1305".to_string());
-                            if let Err(e) = tx_for_spawn.send(VoiceGatewayCommand::SelectProtocol {
-                                address: my_ip,
-                                port: my_port,
-                                mode,
-                            }).await {
-                                tracing::error!("Voice SelectProtocol send failed: {}", e);
-                            }
-                        }
-                        Err(e) => {
-                            tracing::error!("Voice IP discovery failed: {}", e);
-                            let _ = update_tx_clone.send(UiUpdate::VoiceConnectionProgress(format!("failed:{}", e)));
-                        }
-                    }
-                });
-            }
-            VoiceGatewayEvent::SessionDescription(desc) => {
-                conn.on_session_description(&desc).await;
-                let _ = update_tx.send(UiUpdate::VoiceConnectionProgress("connected".to_string()));
-                let ssrc = conn.ssrc.read().await.unwrap_or(0);
-                let enc = conn.encryption_mode.read().await.clone().unwrap_or_else(|| "—".to_string());
-                let info = conn.info().await;
-                let _ = update_tx.send(UiUpdate::VoiceStats {
-                    ping_ms: 0,
-                    encryption_mode: enc,
-                    endpoint: info.endpoint,
-                    ssrc,
-                    packets_sent: 0,
-                    packets_received: 0,
-                    connection_duration_secs: 0,
-                });
-            }
-            VoiceGatewayEvent::ClientConnect(cc) => {
-                conn.on_client_connect(&cc.user_id, cc.audio_ssrc).await;
-            }
-            VoiceGatewayEvent::ClientDisconnect(cd) => {
-                conn.on_client_disconnect(&cd.user_id).await;
-            }
-            VoiceGatewayEvent::Speaking(s) => {
-                let user_id = conn
-                    .ssrc_map
-                    .read()
-                    .await
-                    .get_user(s.ssrc)
-                    .map(|s| s.to_string())
-                    .unwrap_or_default();
-                if !user_id.is_empty() {
-                    let _ = update_tx.send(UiUpdate::VoiceSpeakingChanged {
-                        user_id,
-                        speaking: s.speaking != 0,
-                    });
-                }
-            }
-            VoiceGatewayEvent::Closed => break,
-            _ => {}
-        }
-    }
-    cmd_tx.take();
 }
 
 /// Shared gateway command sender type — used to send op 4 (VoiceStateUpdate) etc.
@@ -2352,26 +1999,6 @@ pub struct BridgeCache {
     pub guild_owners: HashMap<String, String>,
     /// Cached member list per guild_id (from Op 14 GUILD_MEMBER_LIST_UPDATE / Op 8 GUILD_MEMBERS_CHUNK)
     pub members: HashMap<String, Vec<MemberInfo>>,
-    /// Voice: our session_id from VOICE_STATE_UPDATE (needed for voice gateway)
-    pub voice_session_id: Option<String>,
-    /// Voice: channel_id -> participants in that voice channel
-    pub voice_channel_members: HashMap<String, Vec<VoiceParticipant>>,
-    /// Voice: channel we are currently in (if any)
-    pub voice_channel_id: Option<String>,
-    /// Voice: guild we are in for voice (if any)
-    pub voice_guild_id: Option<String>,
-    /// Voice: our current self_mute / self_deaf for op 4
-    pub voice_self_mute: bool,
-    pub voice_self_deaf: bool,
-    /// Voice: fake mute (appear muted to others but still receive)
-    pub voice_fake_mute: bool,
-    /// Voice: fake deafen (appear deafened to others but still hear)
-    pub voice_fake_deafen: bool,
-    /// Voice: from VOICE_SERVER_UPDATE (token + endpoint to connect to voice gateway)
-    pub voice_server_token: Option<String>,
-    pub voice_server_endpoint: Option<String>,
-    /// Voice: active connection (created when we have session_id + token + endpoint)
-    pub voice_connection: Option<Arc<VoiceConnection>>,
     /// User presence: user_id -> status (online, idle, dnd, offline)
     pub presence: HashMap<String, String>,
     /// Guild IDs muted for notifications (no desktop/sound notifications)
@@ -2391,17 +2018,6 @@ impl Default for BridgeCache {
             my_guild_roles: HashMap::new(),
             guild_owners: HashMap::new(),
             members: HashMap::new(),
-            voice_session_id: None,
-            voice_channel_members: HashMap::new(),
-            voice_channel_id: None,
-            voice_guild_id: None,
-            voice_self_mute: false,
-            voice_self_deaf: false,
-            voice_fake_mute: false,
-            voice_fake_deafen: false,
-            voice_server_token: None,
-            voice_server_endpoint: None,
-            voice_connection: None,
             presence: HashMap::new(),
             muted_guild_ids: HashSet::new(),
         }
@@ -2961,35 +2577,22 @@ pub async fn handle_ui_action(
                     }
                 }
 
-                let has_cached_channels = cache.lock().await.channels.contains_key(&guild_id);
-                if has_cached_channels {
-                    // Instant: already sent cache. Refresh from REST in background.
-                    let client_bg = Arc::clone(client);
-                    let cache_bg = Arc::clone(cache);
-                    let gateway_cmd_bg = Arc::clone(gateway_cmd);
-                    let update_tx_bg = update_tx.clone();
-                    let guild_id_bg = guild_id.clone();
-                    tokio::spawn(async move {
-                        refresh_guild_channels_from_rest(
-                            client_bg,
-                            cache_bg,
-                            gateway_cmd_bg,
-                            update_tx_bg,
-                            guild_id_bg,
-                        )
-                        .await;
-                    });
-                } else {
-                    // Cache miss: run REST in foreground so UI gets at least one response.
+                // Always refresh from REST in background (never block the action handler)
+                let client_bg = Arc::clone(client);
+                let cache_bg = Arc::clone(cache);
+                let gateway_cmd_bg = Arc::clone(gateway_cmd);
+                let update_tx_bg = update_tx.clone();
+                let guild_id_bg = guild_id.clone();
+                tokio::spawn(async move {
                     refresh_guild_channels_from_rest(
-                        Arc::clone(client),
-                        Arc::clone(cache),
-                        Arc::clone(gateway_cmd),
-                        update_tx.clone(),
-                        guild_id.clone(),
+                        client_bg,
+                        cache_bg,
+                        gateway_cmd_bg,
+                        update_tx_bg,
+                        guild_id_bg,
                     )
                     .await;
-                }
+                });
             }
         }
 
@@ -3651,29 +3254,6 @@ pub async fn handle_ui_action(
             }
         }
 
-        UiAction::GetMullvadServers => {
-            let list = MullvadServerList::new();
-            let mut countries: Vec<serde_json::Value> = Vec::new();
-            for (code, name) in list.get_countries() {
-                let cities: Vec<serde_json::Value> = list
-                    .get_cities(code)
-                    .into_iter()
-                    .map(|(city_code, city_name)| {
-                        serde_json::json!({
-                            "code": city_code,
-                            "name": city_name,
-                        })
-                    })
-                    .collect();
-                countries.push(serde_json::json!({
-                    "code": code,
-                    "name": name,
-                    "cities": cities,
-                }));
-            }
-            let json = serde_json::to_string(&countries).unwrap_or_default();
-            let _ = update_tx.send(UiUpdate::MullvadServersLoaded(json));
-        }
 
         UiAction::SetPluginEnabled { plugin_id, enabled } => {
             let mut plugins = plugin_enabled.write().await;
@@ -3796,28 +3376,18 @@ pub async fn handle_ui_action(
 
         UiAction::SetProxySettings {
             enabled,
-            mode,
-            mullvad_country,
-            mullvad_city,
-            mullvad_server,
-            custom_host,
-            custom_port,
+            host,
+            port,
+            username,
+            password,
         } => {
             if let Ok(storage) = Storage::new() {
                 let mut settings = storage.load_settings().unwrap_or_default();
                 settings.proxy_settings.enabled = enabled;
-                settings.proxy_settings.mode = if mode == "mullvad" {
-                    ProxyMode::Mullvad
-                } else {
-                    ProxyMode::Custom
-                };
-                settings.proxy_settings.mullvad_country = mullvad_country;
-                settings.proxy_settings.mullvad_city = mullvad_city;
-                settings.proxy_settings.mullvad_server = mullvad_server;
-                if let (Some(host), Some(port)) = (custom_host, custom_port) {
-                    settings.proxy_settings.custom_host = host;
-                    settings.proxy_settings.custom_port = port;
-                }
+                settings.proxy_settings.host = host;
+                settings.proxy_settings.port = port;
+                settings.proxy_settings.username = username;
+                settings.proxy_settings.password = password;
                 let _ = storage.save_settings(&settings);
                 if let Some(proxy_config) = settings.proxy_settings.to_proxy_config() {
                     if let Err(e) = client.set_proxy(Some(proxy_config)).await {
@@ -3834,199 +3404,6 @@ pub async fn handle_ui_action(
                 }
             } else {
                 tracing::error!("Failed to open storage for proxy settings");
-            }
-        }
-
-        UiAction::JoinVoice {
-            guild_id,
-            channel_id,
-        } => {
-            tracing::info!("Joining voice channel: {} (guild: {:?})", channel_id, guild_id);
-            let c = cache.lock().await;
-            let self_mute = c.voice_self_mute || c.voice_fake_mute;
-            let self_deaf = c.voice_self_deaf || c.voice_fake_deafen;
-            let cmd = crate::gateway::GatewayCommand::VoiceStateUpdate(
-                crate::gateway::VoiceStateUpdate {
-                    guild_id: guild_id.clone(),
-                    channel_id: Some(channel_id.clone()),
-                    self_mute,
-                    self_deaf,
-                },
-            );
-            drop(c);
-            let guard = gateway_cmd.lock().await;
-            if let Some(ref tx) = *guard {
-                if let Err(e) = tx.send(cmd).await {
-                    tracing::error!("Failed to send VoiceStateUpdate: {}", e);
-                    let _ = update_tx.send(UiUpdate::Error("Failed to join voice".to_string()));
-                } else {
-                    {
-                        let mut c = cache.lock().await;
-                        c.voice_channel_id = Some(channel_id.clone());
-                        c.voice_guild_id = guild_id.clone();
-                    }
-                    let _ = update_tx.send(UiUpdate::VoiceStateChanged(format!(
-                        "joined:{}",
-                        channel_id
-                    )));
-                }
-            } else {
-                tracing::warn!("Gateway not connected, cannot join voice");
-                let _ = update_tx.send(UiUpdate::Error("Not connected to gateway".to_string()));
-            }
-        }
-
-        UiAction::LeaveVoice => {
-            tracing::info!("Leaving voice channel");
-            {
-                let mut c = cache.lock().await;
-                c.voice_connection = None;
-                c.voice_session_id = None;
-                c.voice_channel_id = None;
-                c.voice_guild_id = None;
-                c.voice_server_token = None;
-                c.voice_server_endpoint = None;
-            }
-            let cmd = crate::gateway::GatewayCommand::VoiceStateUpdate(
-                crate::gateway::VoiceStateUpdate {
-                    guild_id: None,
-                    channel_id: None,
-                    self_mute: false,
-                    self_deaf: false,
-                },
-            );
-            let guard = gateway_cmd.lock().await;
-            if let Some(ref tx) = *guard {
-                if let Err(e) = tx.send(cmd).await {
-                    tracing::error!("Failed to send VoiceStateUpdate (leave): {}", e);
-                } else {
-                    let _ = update_tx.send(UiUpdate::VoiceStateChanged("disconnected".to_string()));
-                }
-            }
-        }
-
-        UiAction::ToggleMute => {
-            let (channel_id, guild_id, self_mute, self_deaf) = {
-                let mut c = cache.lock().await;
-                c.voice_self_mute = !c.voice_self_mute;
-                let channel_id = c.voice_channel_id.clone();
-                let guild_id = c.voice_guild_id.clone();
-                let self_mute = c.voice_self_mute || c.voice_fake_mute;
-                let self_deaf = c.voice_self_deaf || c.voice_fake_deafen;
-                // #region agent log
-                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/home/d/RustroverProjects/idea-env/skunkcord/.cursor/debug.log") {
-                    use std::io::Write;
-                    let _ = writeln!(f, "{}", serde_json::json!({"hypothesisId":"G","location":"bridge:ToggleMute","message":"ToggleMute","data":{"cacheVoiceSelfMuteAfterFlip":c.voice_self_mute,"self_muteSent":self_mute}}));
-                }
-                // #endregion
-                (channel_id, guild_id, self_mute, self_deaf)
-            };
-            if let Some(cid) = channel_id {
-                let cmd = crate::gateway::GatewayCommand::VoiceStateUpdate(
-                    crate::gateway::VoiceStateUpdate {
-                        guild_id,
-                        channel_id: Some(cid.clone()),
-                        self_mute,
-                        self_deaf,
-                    },
-                );
-                let guard = gateway_cmd.lock().await;
-                if let Some(ref tx) = *guard {
-                    let _ = tx.send(cmd).await;
-                    let _ = update_tx.send(UiUpdate::VoiceStateChanged(format!("mute:{}", self_mute)));
-                }
-            }
-        }
-
-        UiAction::ToggleDeafen => {
-            let (channel_id, guild_id, self_mute, self_deaf) = {
-                let mut c = cache.lock().await;
-                c.voice_self_deaf = !c.voice_self_deaf;
-                if c.voice_self_deaf {
-                    c.voice_self_mute = true;
-                }
-                let channel_id = c.voice_channel_id.clone();
-                let guild_id = c.voice_guild_id.clone();
-                let self_mute = c.voice_self_mute || c.voice_fake_mute;
-                let self_deaf = c.voice_self_deaf || c.voice_fake_deafen;
-                (channel_id, guild_id, self_mute, self_deaf)
-            };
-            if let Some(cid) = channel_id {
-                let cmd = crate::gateway::GatewayCommand::VoiceStateUpdate(
-                    crate::gateway::VoiceStateUpdate {
-                        guild_id,
-                        channel_id: Some(cid.clone()),
-                        self_mute,
-                        self_deaf,
-                    },
-                );
-                let guard = gateway_cmd.lock().await;
-                if let Some(ref tx) = *guard {
-                    let _ = tx.send(cmd).await;
-                    let _ = update_tx.send(UiUpdate::VoiceStateChanged(format!("deafen:{}", self_deaf)));
-                }
-            }
-        }
-
-        UiAction::ToggleFakeMute => {
-            let (channel_id, guild_id, self_mute, self_deaf) = {
-                let mut c = cache.lock().await;
-                c.voice_fake_mute = !c.voice_fake_mute;
-                let channel_id = c.voice_channel_id.clone();
-                let guild_id = c.voice_guild_id.clone();
-                let self_mute = c.voice_self_mute || c.voice_fake_mute;
-                let self_deaf = c.voice_self_deaf || c.voice_fake_deafen;
-                (channel_id, guild_id, self_mute, self_deaf)
-            };
-            if let Some(cid) = channel_id {
-                let cmd = crate::gateway::GatewayCommand::VoiceStateUpdate(
-                    crate::gateway::VoiceStateUpdate {
-                        guild_id,
-                        channel_id: Some(cid.clone()),
-                        self_mute,
-                        self_deaf,
-                    },
-                );
-                let guard = gateway_cmd.lock().await;
-                if let Some(ref tx) = *guard {
-                    let _ = tx.send(cmd).await;
-                }
-            }
-        }
-
-        UiAction::ToggleFakeDeafen => {
-            let (channel_id, guild_id, self_mute, self_deaf, fake_deafen) = {
-                let mut c = cache.lock().await;
-                c.voice_fake_deafen = !c.voice_fake_deafen;
-                if c.voice_fake_deafen {
-                    c.voice_fake_mute = true; // Fake deafen implies fake mute
-                } else {
-                    c.voice_fake_mute = false;
-                }
-                let channel_id = c.voice_channel_id.clone();
-                let guild_id = c.voice_guild_id.clone();
-                let self_mute = c.voice_self_mute || c.voice_fake_mute;
-                let self_deaf = c.voice_self_deaf || c.voice_fake_deafen;
-                let fd = c.voice_fake_deafen;
-                (channel_id, guild_id, self_mute, self_deaf, fd)
-            };
-            if let Some(cid) = channel_id {
-                let cmd = crate::gateway::GatewayCommand::VoiceStateUpdate(
-                    crate::gateway::VoiceStateUpdate {
-                        guild_id,
-                        channel_id: Some(cid.clone()),
-                        self_mute,
-                        self_deaf,
-                    },
-                );
-                let guard = gateway_cmd.lock().await;
-                if let Some(ref tx) = *guard {
-                    let _ = tx.send(cmd).await;
-                    let _ = update_tx.send(UiUpdate::VoiceStateChanged(format!(
-                        "fake_deafen:{}",
-                        fake_deafen
-                    )));
-                }
             }
         }
 
@@ -4058,38 +3435,6 @@ mod tests {
         let _ = bridge.update_tx.send(UiUpdate::Connected);
         let update = update_rx.recv().await.unwrap();
         assert!(matches!(update, UiUpdate::Connected));
-    }
-
-    #[tokio::test]
-    async fn test_voice_join_without_gateway() {
-        let client = DiscordClient::new().await.unwrap();
-        let client = Arc::new(client);
-        let (update_tx, _update_rx) = std::sync::mpsc::channel();
-        let gateway_cmd: SharedGatewayCmd = Arc::new(tokio::sync::Mutex::new(None));
-        let cache: SharedBridgeCache = Arc::new(tokio::sync::Mutex::new(BridgeCache::default()));
-
-        // JoinVoice without a gateway sender should produce an error
-        let flags = Arc::new(RwLock::new(FeatureFlags::standard()));
-        let plugin_enabled = Arc::new(RwLock::new(std::collections::HashMap::new()));
-        let plugin_manifests = Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new()));
-        let storage = Storage::new().unwrap();
-        handle_ui_action(
-            UiAction::JoinVoice {
-                guild_id: Some("g1".to_string()),
-                channel_id: "vc1".to_string(),
-            },
-            &client,
-            &update_tx,
-            &gateway_cmd,
-            &cache,
-            &flags,
-            &plugin_enabled,
-            &plugin_manifests,
-            None,
-            &storage,
-        )
-        .await;
-        // Should not panic — gracefully logs warning
     }
 
     #[tokio::test]

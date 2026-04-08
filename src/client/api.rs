@@ -1339,7 +1339,9 @@ pub struct Connection {
     pub name: String,
     #[serde(rename = "type")]
     pub connection_type: String,
+    #[serde(default)]
     pub verified: bool,
+    #[serde(default)]
     pub visibility: u8,
     pub friend_sync: Option<bool>,
     pub show_activity: Option<bool>,

@@ -538,13 +538,6 @@ impl Gateway {
                                 s: None, t: None,
                             }).ok()
                         }
-                        GatewayCommand::VoiceStateUpdate(update) => {
-                            serde_json::to_string(&GatewayPayload {
-                                op: 4,
-                                d: Some(serde_json::to_value(&update).unwrap()),
-                                s: None, t: None,
-                            }).ok()
-                        }
                         GatewayCommand::LazyGuild(request) => {
                             serde_json::to_string(&GatewayPayload {
                                 op: 14,
@@ -1043,8 +1036,6 @@ pub enum GatewayCommand {
     UpdatePresence(PresenceUpdate),
     /// Op 8: Request guild members (triggers GUILD_MEMBERS_CHUNK)
     RequestGuildMembers(GuildMembersRequest),
-    /// Op 4: Voice state update (join/move/disconnect voice)
-    VoiceStateUpdate(VoiceStateUpdate),
     /// Op 14: Request lazy guild — loads member sidebar data
     /// This is what the real Discord client sends to populate the member list
     LazyGuild(LazyGuildRequest),
@@ -1124,11 +1115,4 @@ pub struct GuildMembersRequest {
     pub nonce: Option<String>,
 }
 
-/// Voice state update
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VoiceStateUpdate {
-    pub guild_id: Option<String>,
-    pub channel_id: Option<String>,
-    pub self_mute: bool,
-    pub self_deaf: bool,
-}
+

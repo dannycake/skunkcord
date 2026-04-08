@@ -11,7 +11,7 @@ mod encryption;
 
 use crate::client::Session;
 use crate::features::FeatureFlags;
-use crate::proxy::{ProxyConfig, ProxyType};
+use crate::proxy::ProxyConfig;
 use crate::{DiscordError, Result};
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
@@ -294,115 +294,38 @@ impl Default for FingerprintSettings {
 /// Proxy settings
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProxySettings {
-    /// Whether proxy is enabled
     pub enabled: bool,
-    /// Proxy mode (custom or Mullvad)
-    pub mode: ProxyMode,
-    /// Custom proxy host
-    pub custom_host: String,
-    /// Custom proxy port
-    pub custom_port: u16,
-    /// Custom proxy username
-    pub custom_username: Option<String>,
-    /// Custom proxy password
-    pub custom_password: Option<String>,
-    /// Custom proxy type
-    pub custom_type: ProxyType,
-    /// Selected Mullvad country code
-    pub mullvad_country: Option<String>,
-    /// Selected Mullvad city code
-    pub mullvad_city: Option<String>,
-    /// Selected Mullvad server hostname
-    pub mullvad_server: Option<String>,
-    /// Force all traffic through proxy
-    pub force_all_traffic: bool,
+    pub host: String,
+    pub port: u16,
+    pub username: Option<String>,
+    pub password: Option<String>,
 }
 
 impl Default for ProxySettings {
     fn default() -> Self {
         Self {
             enabled: false,
-            mode: ProxyMode::Custom,
-            custom_host: "127.0.0.1".to_string(),
-            custom_port: 1080,
-            custom_username: None,
-            custom_password: None,
-            custom_type: ProxyType::Socks5,
-            mullvad_country: None,
-            mullvad_city: None,
-            mullvad_server: None,
-            force_all_traffic: true,
+            host: "127.0.0.1".to_string(),
+            port: 1080,
+            username: None,
+            password: None,
         }
     }
 }
 
 impl ProxySettings {
-    /// Convert to ProxyConfig
     pub fn to_proxy_config(&self) -> Option<ProxyConfig> {
         if !self.enabled {
             return None;
         }
-
-        match self.mode {
-            ProxyMode::Custom => {
-                let config = ProxyConfig {
-                    enabled: true,
-                    proxy_type: self.custom_type,
-                    host: self.custom_host.clone(),
-                    port: self.custom_port,
-                    username: self.custom_username.clone(),
-                    password: self.custom_password.clone(),
-                };
-                Some(config)
-            }
-            ProxyMode::Mullvad => {
-                // Build Mullvad SOCKS5 proxy URL
-                if let Some(ref server) = self.mullvad_server {
-                    // Use the specific server hostname
-                    Some(ProxyConfig {
-                        enabled: true,
-                        proxy_type: ProxyType::Socks5,
-                        host: format!(
-                            "{}.socks5.mullvad.net",
-                            server.replace("-wg.socks5.mullvad.net", "")
-                        ),
-                        port: 1080,
-                        username: None,
-                        password: None,
-                    })
-                } else if let (Some(ref country), Some(ref city)) =
-                    (&self.mullvad_country, &self.mullvad_city)
-                {
-                    Some(ProxyConfig {
-                        enabled: true,
-                        proxy_type: ProxyType::Socks5,
-                        host: format!("{}-{}-wg.socks5.mullvad.net", country, city),
-                        port: 1080,
-                        username: None,
-                        password: None,
-                    })
-                } else {
-                    self.mullvad_country.as_ref().map(|country| ProxyConfig {
-                        enabled: true,
-                        proxy_type: ProxyType::Socks5,
-                        host: format!("{}-wg.socks5.mullvad.net", country),
-                        port: 1080,
-                        username: None,
-                        password: None,
-                    })
-                }
-            }
-        }
+        Some(ProxyConfig {
+            enabled: true,
+            host: self.host.clone(),
+            port: self.port,
+            username: self.username.clone(),
+            password: self.password.clone(),
+        })
     }
-}
-
-/// Proxy mode selection
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum ProxyMode {
-    /// Custom proxy configuration
-    Custom,
-    /// Use Mullvad VPN SOCKS5 servers
-    Mullvad,
 }
 
 /// Browser types for emulation
