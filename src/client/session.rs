@@ -109,8 +109,14 @@ pub struct LoginCredentials {
     pub login: String,
     pub password: String,
     pub undelete: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub login_source: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub gift_code_sku_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub captcha_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub captcha_rqtoken: Option<String>,
 }
 
 /// Response from login endpoint

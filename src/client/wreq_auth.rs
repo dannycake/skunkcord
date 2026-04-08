@@ -64,25 +64,18 @@ pub async fn login_with_credentials_wreq(
         undelete: false,
         login_source: None,
         gift_code_sku_id: None,
+        captcha_key: captcha_key.map(|s| s.to_string()),
+        captcha_rqtoken: captcha_rqtoken.map(|s| s.to_string()),
     };
     let body_str = serde_json::to_string(&body)
         .map_err(|e| DiscordError::Http(format!("login body: {}", e)))?;
 
-    let mut request = apply_headers(
+    let request = apply_headers(
         client.post(&url).body(body_str),
         fingerprint,
         x_fingerprint,
         "https://discord.com/login",
     );
-    if let Some(key) = captcha_key {
-        request = request.header("X-Captcha-Key", key);
-    }
-    if let Some(rqt) = captcha_rqtoken {
-        request = request.header("X-Captcha-Rqtoken", rqt);
-    }
-    if let Some(sid) = captcha_session_id {
-        request = request.header("X-Captcha-Session-Id", sid);
-    }
 
     let response = request
         .send()

@@ -889,6 +889,8 @@ impl DiscordClient {
             undelete: false,
             login_source: None,
             gift_code_sku_id: None,
+            captcha_key: captcha_key.map(|s| s.to_string()),
+            captcha_rqtoken: captcha_rqtoken.map(|s| s.to_string()),
         };
         let body_str = serde_json::to_string(&body)
             .map_err(|e| DiscordError::Http(format!("login body: {}", e)))?;
@@ -896,22 +898,13 @@ impl DiscordClient {
         self.pre_request("POST", endpoint).await;
 
         let client = self.inner.read().await;
-        let mut request = self
+        let request = self
             .prepare_request(client.post(&url))
             .await
             .header(CONTENT_TYPE, "application/json")
             .header("X-Fingerprint", x_fingerprint)
             .header("Referer", "https://discord.com/login")
             .body(body_str);
-        if let Some(key) = captcha_key {
-            request = request.header("X-Captcha-Key", key);
-        }
-        if let Some(rqt) = captcha_rqtoken {
-            request = request.header("X-Captcha-Rqtoken", rqt);
-        }
-        if let Some(sid) = captcha_session_id {
-            request = request.header("X-Captcha-Session-Id", sid);
-        }
         drop(client);
 
         let response = request
