@@ -12,6 +12,10 @@ mobile/**/build/
 .cursor/
 .vscode/
 
+# Tooling
+.superpowers/
+docs/superpowers/
+
 # OS
 .DS_Store
 Thumbs.db
