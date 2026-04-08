@@ -14,7 +14,7 @@
 //! - Moderation actions (kick, ban, timeout, delete messages)
 //! - User profiles and connections
 //! - Guild and channel management
-//! - SOCKS5 proxy support with Mullvad server selection
+//! - SOCKS5 proxy support
 //! - Telemetry endpoint blocking (same as Vencord/BetterDiscord)
 //! - Automatic rate-limit retry with backoff
 //! - Feature flags with safety profiles

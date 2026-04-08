@@ -12,7 +12,6 @@ use crate::client::attachments::{self, mime_from_extension};
 use crate::client::{DiscordClient, Permission, Relationship};
 use chrono::TimeZone;
 use crate::features::FeatureFlags;
-use crate::plugins::message_logger::MessageCache;
 use crate::plugins::hooks::{GatewayEventHooks, MessageDeleteResult};
 use crate::gateway::{GatewayCommand, GatewayEvent, LazyGuildRequest};
 use crate::client::permissions::{
