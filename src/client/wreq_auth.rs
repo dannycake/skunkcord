@@ -89,10 +89,25 @@ pub async fn login_with_credentials_wreq(
         .map_err(|e| DiscordError::Http(format!("login response body: {}", e)))?;
 
     if status == 400 {
+        tracing::warn!("Login 400 response: {}", resp_body);
         crate::client::captcha_interceptor::check_for_captcha(status, &resp_body)?;
         let msg = serde_json::from_str::<serde_json::Value>(&resp_body)
             .ok()
-            .and_then(|v| v.get("message").and_then(|m| m.as_str()).map(|s| s.to_string()))
+            .and_then(|v| {
+                // Try to extract nested error message from errors.*._ errors[0].message
+                if let Some(errors) = v.get("errors").and_then(|e| e.as_object()) {
+                    for (_field, field_errors) in errors {
+                        if let Some(err_list) = field_errors.get("_errors").and_then(|e| e.as_array()) {
+                            if let Some(first) = err_list.first() {
+                                if let Some(msg) = first.get("message").and_then(|m| m.as_str()) {
+                                    return Some(msg.to_string());
+                                }
+                            }
+                        }
+                    }
+                }
+                v.get("message").and_then(|m| m.as_str()).map(|s| s.to_string())
+            })
             .unwrap_or_else(|| "Bad Request".to_string());
         return Err(DiscordError::Http(format!("Login failed: {}", msg)));
     }
