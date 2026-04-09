@@ -1,6 +1,7 @@
 <!-- Copyright (c) Skunk Ventures LLC | Last modified: 2025-03-07 | SPDX-License-Identifier: MIT -->
 
 # skunkcord client
+<img width="1594" height="950" alt="image" src="https://github.com/user-attachments/assets/8a8b2e6a-5714-4182-8601-dbbf56f8a372" />
 
 a user-account discord client built with rust and qt, featuring comprehensive api coverage and built-in client mod features.
 
